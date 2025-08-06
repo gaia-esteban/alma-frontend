@@ -1,44 +1,64 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { colors } from '@/lib/colors';
-import { Card } from '../ui/card';
-import { CardContent } from '../ui/cardContent';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { CardHeader } from '../ui/cardHeader';
-import { CardTitle } from '../ui/cardTitle';
-import { CardDescription } from '../ui/cardDescription';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { colors } from "@/lib/colors";
+import { Card } from "../ui/card";
+import { CardContent } from "../ui/cardContent";
+import { Mail, ArrowLeft, Loader2, AlertCircle, X } from "lucide-react";
+import { CardHeader } from "../ui/cardHeader";
+import { CardTitle } from "../ui/cardTitle";
+import { CardDescription } from "../ui/cardDescription";
+import { useAuth } from "@/hooks/useAuth";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
+import { FormErrors } from "@/types/login";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
-  const { loading, error, signInWithGoogle, sendOTP, verifyOTP, clearError } = useAuth();
-  
-  const [step, setStep] = useState('email');
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [formErrors, setFormErrors] = useState({});
+  const {
+    loading,
+    error,
+    signInWithGoogle,
+    sendOTP,
+    verifyOTP,
+    clearError,
+    errorMessage,
+    setErrorMessage,
+  } = useAuth();
 
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const [step, setStep] = useState("email");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
+
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const router = useRouter();
 
   const handleEmailSubmit = async () => {
-    setFormErrors({}); 
+    setFormErrors({});
     clearError();
 
     if (!email.trim()) {
-      setFormErrors({ email: 'Email is required' });
+      setFormErrors({ email: "Email is required" });
       return;
     }
 
     if (!isValidEmail(email)) {
-      setFormErrors({ email: 'Please enter a valid email address' });
+      setFormErrors({ email: "Please enter a valid email address" });
       return;
     }
 
     const success = await sendOTP(email);
     if (success) {
-      setStep('otp');
+      setStep("otp");
     }
   };
 
@@ -47,73 +67,68 @@ export default function LoginPage() {
     clearError();
 
     if (otp.length !== 6) {
-      setFormErrors({ otp: 'OTP must be exactly 6 digits' });
+      setFormErrors({ otp: "OTP must be exactly 6 digits" });
       return;
     }
 
-    await verifyOTP(email, otp);
-  };
-
-  const handleGoogleSignIn = async () => {
-    setFormErrors({});
-    clearError();
-    await signInWithGoogle();
-  };
-
-  const handleBackToEmail = () => {
-    setStep('email');
-    setOtp('');
-    setFormErrors({});
-    clearError();
-  };
-
-  const handleOTPChange = (e) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-    setOtp(value);
-    if (formErrors.otp) {
-      setFormErrors({ ...formErrors, otp: undefined });
+    const success = await verifyOTP(email, otp);
+    if (success) {
+      router.push("/purchase-orders");
     }
   };
 
-  const handleEmailChange = (e) => {
+  const handleGoogleSignIn = async () => {
+    setFormErrors({email:'', otp:''});
+    clearError();
+    const success = await signInWithGoogle();
+    if (success) {
+      router.push('/purchase-orders');
+    }
+  };
+
+  const handleBackToEmail = () => {
+    setStep("email");
+    setOtp("");
+    setFormErrors({});
+    clearError();
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     if (formErrors.email) {
       setFormErrors({ ...formErrors, email: undefined });
     }
   };
- 
 
   return (
-    <div 
+    <div
       className="min-h-screen flex items-center justify-center p-4"
       style={{
-        background: `linear-gradient(135deg, ${colors.primary}0D, ${colors.secondary}0D)`
+        background: `linear-gradient(135deg, ${colors.primary}0D, ${colors.secondary}0D)`,
       }}
     >
       <div className="w-full max-w-md">
         {/* Logo and App Info */}
         <div className="text-center mb-6 sm:mb-8">
-          <div 
+          <div
             className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4"
             style={{ backgroundColor: colors.primary }}
           >
-            <span 
-              className="font-bold text-lg sm:text-xl"
-              style={{ color: colors.primaryForeground }}
-            >
-              S
-            </span>
+            <Image
+              src="/Icono.jpg"
+              alt="Savia Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
-          <h1 
+          <h1
             className="text-xl sm:text-2xl font-bold mb-1"
             style={{ color: colors.secondary }}
           >
             Savia 2.0
           </h1>
-          <p 
-            className="text-sm"
-            style={{ color: colors.mutedForeground }}
-          >
+          <p className="text-sm" style={{ color: colors.mutedForeground }}>
             Purchase Order Management
           </p>
         </div>
@@ -121,27 +136,26 @@ export default function LoginPage() {
         <Card className="w-full">
           <CardHeader>
             <CardTitle>
-              {step === 'email' ? 'Welcome back' : 'Enter verification code'}
+              {step === "email" ? "Welcome back" : "Enter verification code"}
             </CardTitle>
             <CardDescription>
-              {step === 'email' 
-                ? 'Sign in to your account to continue' 
-                : `We've sent a 6-digit code to ${email}`
-              }
+              {step === "email"
+                ? "Sign in to your account to continue"
+                : `We've sent a 6-digit code to ${email}`}
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             {/* Error Message */}
             {error && (
-              <div 
+              <div
                 className="border rounded-md p-3"
-                style={{ 
+                style={{
                   backgroundColor: `${colors.destructive}1A`,
-                  borderColor: `${colors.destructive}33`
+                  borderColor: `${colors.destructive}33`,
                 }}
               >
-                <p 
+                <p
                   className="text-sm text-center"
                   style={{ color: colors.destructive }}
                 >
@@ -151,7 +165,7 @@ export default function LoginPage() {
             )}
 
             {/* Email Step */}
-            {step === 'email' && (
+            {step === "email" && (
               <>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -165,7 +179,7 @@ export default function LoginPage() {
                       autoComplete="email"
                     />
                     {formErrors.email && (
-                      <p 
+                      <p
                         className="text-sm"
                         style={{ color: colors.destructive }}
                       >
@@ -173,9 +187,26 @@ export default function LoginPage() {
                       </p>
                     )}
                   </div>
-                  
-                  <Button 
-                    className="w-full" 
+                  {errorMessage && (
+                    <Alert
+                      variant="destructive"
+                      className="relative pr-10 mb-4"
+                    >
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{errorMessage}</AlertDescription>
+                      <button
+                        onClick={() => setErrorMessage("")}
+                        className="absolute right-2 top-2 text-sm text-muted-foreground hover:text-foreground"
+                        aria-label="Cerrar"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </Alert>
+                  )}
+
+                  <Button
+                    className="w-full"
                     disabled={loading || !email.trim()}
                     onClick={handleEmailSubmit}
                   >
@@ -196,17 +227,17 @@ export default function LoginPage() {
                 {/* Divider */}
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <span 
+                    <span
                       className="w-full border-t"
                       style={{ borderColor: colors.border }}
                     />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span 
+                    <span
                       className="px-2 text-xs"
-                      style={{ 
+                      style={{
                         backgroundColor: colors.input,
-                        color: colors.mutedForeground 
+                        color: colors.mutedForeground,
                       }}
                     >
                       Or continue with
@@ -215,9 +246,9 @@ export default function LoginPage() {
                 </div>
 
                 {/* Google Sign In */}
-                <Button 
-                  variant="outline" 
-                  className="w-full" 
+                <Button
+                  variant="outline"
+                  className="w-full"
                   onClick={handleGoogleSignIn}
                   disabled={loading}
                 >
@@ -249,38 +280,53 @@ export default function LoginPage() {
             )}
 
             {/* OTP Step */}
-            {step === 'otp' && (
+            {step === "otp" && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter 6-digit code"
-                    value={otp}
-                    onChange={handleOTPChange}
-                    error={!!formErrors.otp}
-                    className="text-center text-lg tracking-widest"
-                    maxLength={6}
-                    disabled={loading}
-                    autoComplete="one-time-code"
-                  />
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={(value) => {
+                        setOtp(value);
+                        if (formErrors.otp) {
+                          setFormErrors({ ...formErrors, otp: undefined });
+                        }
+                      }}
+                      disabled={loading}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                      </InputOTPGroup>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
                   {formErrors.otp && (
-                    <p 
+                    <p
                       className="text-sm text-center"
                       style={{ color: colors.destructive }}
                     >
                       {formErrors.otp}
                     </p>
                   )}
-                  <p 
+                  <p
                     className="text-xs text-center"
                     style={{ color: colors.mutedForeground }}
                   >
                     Try: 123456
                   </p>
                 </div>
-                
-                <Button 
-                  className="w-full" 
+
+                <Button
+                  className="w-full"
                   disabled={loading || otp.length !== 6}
                   onClick={handleOTPSubmit}
                 >
@@ -290,13 +336,13 @@ export default function LoginPage() {
                       Verifying...
                     </>
                   ) : (
-                    'Verify and continue'
+                    "Verify and continue"
                   )}
                 </Button>
 
-                <Button 
-                  variant="ghost" 
-                  className="w-full" 
+                <Button
+                  variant="ghost"
+                  className="w-full"
                   onClick={handleBackToEmail}
                   disabled={loading}
                 >
@@ -306,12 +352,12 @@ export default function LoginPage() {
 
                 {/* Resend OTP */}
                 <div className="text-center">
-                  <p 
+                  <p
                     className="text-sm"
                     style={{ color: colors.mutedForeground }}
                   >
-                    Didn't receive the code?{' '}
-                    <button 
+                    Didn&apos;t receive the code?{" "}
+                    <button
                       type="button"
                       className="font-medium hover:underline"
                       style={{ color: colors.primary }}
@@ -330,17 +376,17 @@ export default function LoginPage() {
         {/* Terms and Privacy */}
         <div className="text-center mt-6 text-xs sm:text-sm px-4">
           <p style={{ color: colors.mutedForeground }}>
-            By continuing, you agree to our{' '}
-            <a 
-              href="#" 
+            By continuing, you agree to our{" "}
+            <a
+              href="#"
               className="hover:underline"
               style={{ color: colors.primary }}
             >
               Terms of Service
-            </a>{' '}
-            and{' '}
-            <a 
-              href="#" 
+            </a>{" "}
+            and{" "}
+            <a
+              href="#"
               className="hover:underline"
               style={{ color: colors.primary }}
             >
@@ -350,6 +396,5 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
-
   );
 }

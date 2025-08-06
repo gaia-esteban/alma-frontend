@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { setUser, clearUser } from '@/store/slices/authSlice';
+import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store";
+import { setUser, clearUser } from "@/store/slices/authSlice";
+import { auth, provider, signInWithPopup } from "@/lib/auth";
+import { OTP, SAVIA_CORE } from "@/lib/constants";
+import { useSendOtpMutation, useVerifyOtpMutation } from "@/store/api/authApi";
 
 /**
  * useAuth hook
@@ -17,45 +20,72 @@ export function useAuth() {
   // Local loading and error states for auth processes
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  /**
-   * Simulates Google sign-in process
-   */
+  const [sendOtp] = useSendOtpMutation();
+  const [verifyOtp] = useVerifyOtpMutation();
+
   const signInWithGoogle = async () => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    dispatch(setUser({ name: 'Google User' }));
-    setLoading(false);
-    alert('Google sign-in successful!');
+    try {
+      const response = await signInWithPopup(auth, provider);
+      console.log("🚀 ~ signInWithGoogle ~ response:", response.user);
+      setLoading(false);
+      //dispatch(setUser(result));
+      return true;
+    } catch (error: any) {
+      console.error("Google sign-in failed", error);
+      setError(error || "Google sign-in failed");
+      setLoading(false);
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**
-   * Simulates sending OTP to email
+   * Sending OTP to email
    * @param email email address
    */
   const sendOTP = async (email: string) => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    return true;
+    try {
+      const result = await sendOtp({ email, appType: SAVIA_CORE }).unwrap();
+      setLoading(false);
+      return result;
+    } catch (error) {
+      console.error("Error sending OTP", error);
+      setLoading(false);
+      setErrorMessage("Usuario no autorizado para ingresar");
+      return false;
+    }
   };
 
   /**
-   * Simulates verifying an OTP
+   * verifying an OTP
    * @param email email address
    * @param otp one-time password
    */
   const verifyOTP = async (email: string, otp: string) => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(false);
-    if (otp === '123456') {
-      dispatch(setUser({ email }));
-      alert('OTP verification successful!');
-      return true;
+
+    try {
+      const result = await verifyOtp({
+        email,
+        appType: SAVIA_CORE,
+        authType: OTP,
+        otp,
+      }).unwrap();
+      console.log("🚀 ~ verifyOTP ~ result:", result);
+      //dispatch(setUser(result));
+      setLoading(false);
+      return result;
+    } catch (error) {
+      console.error("Error Verify OTP", error);
+      setLoading(false);
+      setError("Invalid OTP");
+      return false;
     }
-    setError('Invalid OTP. Try 123456');
-    return false;
   };
 
   /**
@@ -88,5 +118,7 @@ export function useAuth() {
     login,
     logout,
     clearError,
+    errorMessage,
+    setErrorMessage,
   };
 }

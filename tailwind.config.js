@@ -25,8 +25,20 @@ module.exports = {
           900: '#020617',
         },
         neutral: '#A9A9A9',
+        destructive: '#ef4444',
+        muted: '#f5f5f5',
+        'muted-foreground': '#737373',
+        border: '#e5e5e5',
+        input: '#ffffff',
+        ring: '#0ce4ac',
+      },
+      borderColor: {
+        DEFAULT: '#e5e5e5',
+      },
+      ringColor: {
+        DEFAULT: '#0ce4ac',
       },
     },
   },
   plugins: [],
-}
+};

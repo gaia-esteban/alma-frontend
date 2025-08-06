@@ -1,8 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 interface AuthState {
-  user: null;
+  user: {
+    uid: string;
+    email: string;
+    displayName?: string;
+    photoURL?: string;
+    providerId?: string;
+  } | null;
+  meta?: Record<string, any>;
 }
+
 
 const initialState: AuthState = {
   user: null,
@@ -13,7 +21,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setUser(state, action) {
-      state.user = action.payload;
+      state.user = action.payload.user;
     },
     clearUser(state) {
       state.user = null;
