@@ -4,11 +4,11 @@ import { HTMLAttributes } from 'react';
 
 export function CardDescription({ children, className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-  <p 
+  <div 
     className={cn('text-sm', className)} {...props}
     style={{ color: colors.mutedForeground }}
   >
     {children}
-  </p>
+  </div>
   );
 }

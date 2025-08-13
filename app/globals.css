@@ -7,7 +7,7 @@
 :root {
 
   /* 🎨 Brand colors */
-  --primary: oklch(0.205 0 0);                /* Buttons, links, highlights */
+  --primary: oklch(0.79 0.154 166.19); /* equivalente a #0ce4ac en OKLCH */            /* Buttons, links, highlights */
   --secondary: oklch(0.97 0 0);              /* Headers, nav, text accents */
   --neutral: #A9A9A9;                /* Borders, placeholders, disabled */
 

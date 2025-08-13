@@ -12,5 +12,3 @@ export function CardTitle({ children, className, ...props }: HTMLAttributes<HTML
   </h3>
   );
 }
-
-

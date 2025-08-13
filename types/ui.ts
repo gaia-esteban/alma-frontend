@@ -8,4 +8,5 @@ export type Variant = 'default' | 'outline' | 'ghost' | 'destructive';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
+  size?: string
 }
