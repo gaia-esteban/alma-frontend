@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Info, CircleArrowUp, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,9 +32,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Menu, Search } from "lucide-react";
+import { Menu, MoreHorizontal, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { FileUser, FileX } from "lucide-react";
+import { FileUser } from "lucide-react";
 import Image from "next/image";
 
 export default function Home() {
@@ -136,16 +135,19 @@ export default function Home() {
   };
 
   return (
-    <main className="p-4 space-y-4">
+    <main className="p-4">
       <div className="flex justify-between items-center mb-4">
         {/* Menú + Texto */}
         <div className="flex items-center space-x-2">
           <button className="p-2 rounded-md hover:bg-gray-100">
             <Menu className="w-6 h-6 text-gray-700" />
           </button>
-          <span className="text-lg font-semibold text-gray-800">
-            Active orders
-          </span>
+
+          {!searchActive && (
+            <span className="text-lg font-semibold text-gray-800">
+              Active orders
+            </span>
+          )}
         </div>
 
         {/* Botón de búsqueda / Input */}
@@ -168,7 +170,7 @@ export default function Home() {
               onBlur={() => {
                 if (searchText === "") setSearchActive(false);
               }}
-              className="border px-3 py-1 rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+              className="border px-3 py-1 rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-primary transition-all"
             />
           )}
         </div>
@@ -204,17 +206,16 @@ export default function Home() {
             [&>span]:bg-white
           `}
           />
-          <label htmlFor="pending-orders" className="text-base font-medium">
+          <label
+            htmlFor="pending-orders"
+            className="whitespace-nowrap text-sm font-medium"
+          >
             Órdenes pendientes
           </label>
         </div>
 
         <div className="flex items-center justify-end gap-4 text-gray-700">
           <FileUser
-            strokeWidth={2.5}
-            className="w-7 h-7 cursor-pointer hover:text-gray-900"
-          />
-          <FileX
             strokeWidth={2.5}
             className="w-7 h-7 cursor-pointer hover:text-gray-900"
           />
@@ -225,8 +226,9 @@ export default function Home() {
         <Card key={index}>
           <CardHeader>
             <CardDescription className="flex flex-col gap-4">
-              <div className="flex justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center gap-2 w-full">
+                {/* Columna izquierda: checkbox + label */}
+                <div className="flex items-center gap-2 min-w-0">
                   <Checkbox
                     id={`order-${index}`}
                     checked={selectedOrders.includes(index)}
@@ -234,16 +236,17 @@ export default function Home() {
                       toggleOrderSelection(index, !!checked)
                     }
                   />
-
                   <label
                     htmlFor={`order-${index}`}
-                    className="text-right text-sm font-medium leading-none"
+                    className="truncate text-sm font-medium leading-none"
                   >
                     # {order["externalId[].value.orderNumber"]}{" "}
                     {formatDate(order.createdAt)}
                   </label>
                 </div>
-                <span className="text-left">
+
+                {/* Columna derecha: precio */}
+                <span className="shrink-0 text-right">
                   {formatCurrency(order.priceAfterTax)}
                 </span>
               </div>
@@ -252,7 +255,7 @@ export default function Home() {
 
           <CardContent className="flex flex-col gap-4">
             <div className="flex justify-between">
-              <span className="truncate max-w-[160px] inline-block align-middle">
+              <span className="truncate max-w-[220px] inline-block align-middle text-sm">
                 {order["customer.fullName"]}
               </span>
               <span className="text-left"></span>
@@ -262,14 +265,6 @@ export default function Home() {
                 {order["status.description"]}
               </Badge>
               <div className="flex gap-2 text-gray-700">
-                <Info
-                  strokeWidth={2.5}
-                  className="w-5 h-5 cursor-pointer hover:text-gray-900"
-                />
-                <CircleArrowUp
-                  strokeWidth={2.5}
-                  className="w-5 h-5 cursor-pointer hover:text-gray-900"
-                />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <MoreHorizontal
@@ -278,11 +273,9 @@ export default function Home() {
                     />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Ver detalles</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setOpen(true)}>
-                      Editar
+                      Cambiar estado
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Eliminar</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

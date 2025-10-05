@@ -1,11 +1,13 @@
-import { configureStore } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import { api } from './api/baseApi';
-import { useDispatch, TypedUseSelectorHook, useSelector } from 'react-redux';
+import { configureStore } from "@reduxjs/toolkit";
+import authSlice from "./slices/authSlice";
+import masterData from "./slices/masterDataSlice";
+import { api } from "./api/baseApi";
+import { useDispatch, TypedUseSelectorHook, useSelector } from "react-redux";
 
 export const store = configureStore({
   reducer: {
     auth: authSlice,
+    masterData: masterData,
     [api.reducerPath]: api.reducer,
   },
   middleware: (getDefaultMiddleware) =>

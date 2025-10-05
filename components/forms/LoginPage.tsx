@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { FormErrors } from "@/types/login";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useStatusOrder } from "@/hooks/useStatusOrder";
 
 export default function LoginPage() {
   const {
@@ -37,6 +38,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [shouldFetchOrders, setShouldFetchOrders] = useState(false);
+
+  useStatusOrder({ skip: !shouldFetchOrders });
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -73,16 +77,17 @@ export default function LoginPage() {
 
     const success = await verifyOTP(email, otp);
     if (success) {
+      setShouldFetchOrders(true);
       router.push("/purchase-orders");
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setFormErrors({email:'', otp:''});
+    setFormErrors({ email: "", otp: "" });
     clearError();
     const success = await signInWithGoogle();
     if (success) {
-      router.push('/purchase-orders');
+      router.push("/purchase-orders");
     }
   };
 

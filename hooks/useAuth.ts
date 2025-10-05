@@ -76,8 +76,7 @@ export function useAuth() {
         authType: OTP,
         otp,
       }).unwrap();
-      console.log("🚀 ~ verifyOTP ~ result:", result);
-      //dispatch(setUser(result));
+      dispatch(setUser(result));
       setLoading(false);
       return result;
     } catch (error) {

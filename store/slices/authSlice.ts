@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 interface AuthState {
   user: {
@@ -8,23 +8,25 @@ interface AuthState {
     photoURL?: string;
     providerId?: string;
   } | null;
-  meta?: Record<string, any>;
+  token: string;
 }
-
 
 const initialState: AuthState = {
   user: null,
+  token: "",
 };
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     setUser(state, action) {
       state.user = action.payload.user;
+      state.token = action.payload.token;
     },
     clearUser(state) {
       state.user = null;
+      state.token = "";
     },
   },
 });
