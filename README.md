@@ -1,9 +1,7 @@
-# Savia Client 2.0 - Frontend Development Guidelines
+# Alma Consulting 2.0 - Frontend Development Guidelines
 
 ## Overview
-Savia 2.0 is a comprehensive purchase order lifecycle management system designed to streamline procurement processes from requisition to delivery. The application will track purchase orders through various stages including creation, approval, vendor selection, order placement, shipping, receiving, and invoice reconciliation. Built with a mobile-first approach, it will serve users across different devices and can be installed as a Progressive Web App for enhanced accessibility and offline capabilities.
-
-The system will provide real-time visibility into purchase order status, automated workflow notifications, vendor management, budget tracking, and comprehensive reporting capabilities for procurement teams and stakeholders.
+Alma Consulting is a web platform to allow accounting companies to enhance their products to boost productivity and better serve customers.
 
 ## Tech Stack
 
