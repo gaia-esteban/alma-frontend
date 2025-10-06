@@ -37,7 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { FileUser } from "lucide-react";
 import Image from "next/image";
 
-export default function Home() {
+export default function IncomingOrders() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [open, setOpen] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
@@ -135,155 +135,157 @@ export default function Home() {
   };
 
   return (
-    <main className="p-4 md:p-6 lg:p-8">
-      <div className="flex justify-between items-center mb-4 md:mb-6">
-        {/* Menú + Texto */}
-        <div className="flex items-center space-x-2">
-          <button className="p-2 rounded-md hover:bg-gray-100">
-            <Menu className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
-          </button>
-
-          {!searchActive && (
-            <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
-              Active orders
-            </span>
-          )}
-        </div>
-
-        {/* Botón de búsqueda / Input */}
-        <div className="relative">
-          {!searchActive && (
-            <button
-              className="p-2 rounded-md hover:bg-gray-100"
-              onClick={() => setSearchActive(true)}
-            >
-              <Search className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+    <main className="w-full min-h-screen p-4 md:p-6 lg:p-8">
+      <div className="w-full max-w-full">
+        <div className="flex justify-between items-center mb-4 md:mb-6">
+          {/* Menú + Texto */}
+          <div className="flex items-center space-x-2">
+            <button className="p-2 rounded-md hover:bg-gray-100">
+              <Menu className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
             </button>
-          )}
-          {searchActive && (
-            <input
-              autoFocus
-              type="text"
-              placeholder="Buscar por cliente..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onBlur={() => {
-                if (searchText === "") setSearchActive(false);
-              }}
-              className="border px-3 py-2 md:py-3 rounded-md w-48 sm:w-64 md:w-72 lg:w-96 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+
+            {!searchActive && (
+              <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
+                Incoming orders
+              </span>
+            )}
+          </div>
+
+          {/* Botón de búsqueda / Input */}
+          <div className="relative">
+            {!searchActive && (
+              <button
+                className="p-2 rounded-md hover:bg-gray-100"
+                onClick={() => setSearchActive(true)}
+              >
+                <Search className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+              </button>
+            )}
+            {searchActive && (
+              <input
+                autoFocus
+                type="text"
+                placeholder="Buscar por cliente..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onBlur={() => {
+                  if (searchText === "") setSearchActive(false);
+                }}
+                className="border px-3 py-2 md:py-3 rounded-md w-48 sm:w-64 md:w-72 lg:w-96 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all"
+              />
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4 sm:gap-6 mb-6">
+          <div className="flex items-center gap-3 justify-center sm:justify-start">
+            <Checkbox
+              id="select-all"
+              className="scale-125 md:scale-150"
+              checked={
+                selectedOrders.length === filteredOrders.length &&
+                filteredOrders.length > 0
+              }
+              onCheckedChange={(checked) =>
+                toggleSelectAll(!!checked, filteredOrders)
+              }
             />
-          )}
-        </div>
-      </div>
+            <label htmlFor="select-all" className="text-sm md:text-base font-medium">
+              All
+            </label>
+          </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4 sm:gap-6 mb-6">
-        <div className="flex items-center gap-3 justify-center sm:justify-start">
-          <Checkbox
-            id="select-all"
-            className="scale-125 md:scale-150"
-            checked={
-              selectedOrders.length === filteredOrders.length &&
-              filteredOrders.length > 0
-            }
-            onCheckedChange={(checked) =>
-              toggleSelectAll(!!checked, filteredOrders)
-            }
-          />
-          <label htmlFor="select-all" className="text-sm md:text-base font-medium">
-            All
-          </label>
-        </div>
-
-        <div className="flex items-center justify-center gap-3">
-          <Switch
-            id="pending-orders"
-            checked={showPendingOnly}
-            onCheckedChange={setShowPendingOnly}
-            className={`
+          <div className="flex items-center justify-center gap-3">
+            <Switch
+              id="pending-orders"
+              checked={showPendingOnly}
+              onCheckedChange={setShowPendingOnly}
+              className={`
             scale-125 md:scale-150
             data-[state=checked]:bg-primary
             data-[state=checked]:border-primary
             [&>span]:bg-white
           `}
-          />
-          <label
-            htmlFor="pending-orders"
-            className="whitespace-nowrap text-xs md:text-sm font-medium"
-          >
-            Órdenes pendientes
-          </label>
+            />
+            <label
+              htmlFor="pending-orders"
+              className="whitespace-nowrap text-xs md:text-sm font-medium"
+            >
+              Órdenes pendientes
+            </label>
+          </div>
+
+          <div className="flex items-center justify-center sm:justify-end gap-4 text-gray-700">
+            <FileUser
+              strokeWidth={2.5}
+              className="w-6 h-6 md:w-7 md:h-7 cursor-pointer hover:text-gray-900"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center justify-center sm:justify-end gap-4 text-gray-700">
-          <FileUser
-            strokeWidth={2.5}
-            className="w-6 h-6 md:w-7 md:h-7 cursor-pointer hover:text-gray-900"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-      {filteredOrders.map((order, index) => (
-        <Card key={index} className="w-full">
-          <CardHeader>
-            <CardDescription className="flex flex-col gap-4">
-              <div className="flex justify-between items-center gap-2 w-full">
-                {/* Columna izquierda: checkbox + label */}
-                <div className="flex items-center gap-2 min-w-0">
-                  <Checkbox
-                    id={`order-${index}`}
-                    checked={selectedOrders.includes(index)}
-                    onCheckedChange={(checked) =>
-                      toggleOrderSelection(index, !!checked)
-                    }
-                  />
-                  <label
-                    htmlFor={`order-${index}`}
-                    className="truncate text-sm font-medium leading-none"
-                  >
-                    # {order["externalId[].value.orderNumber"]}{" "}
-                    {formatDate(order.createdAt)}
-                  </label>
-                </div>
-
-                {/* Columna derecha: precio */}
-                <span className="shrink-0 text-right">
-                  {formatCurrency(order.priceAfterTax)}
-                </span>
-              </div>
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex justify-between">
-              <span className="truncate max-w-[60%] md:max-w-[70%] inline-block align-middle text-sm md:text-base">
-                {order["customer.fullName"]}
-              </span>
-              <span className="text-left"></span>
-            </div>
-            <div className="flex justify-between items-center">
-              <Badge variant={getBadgeVariant(order["status.description"])} className="text-xs md:text-sm">
-                {order["status.description"]}
-              </Badge>
-              <div className="flex gap-2 text-gray-700">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <MoreHorizontal
-                      strokeWidth={2.5}
-                      className="w-5 h-5 md:w-6 md:h-6 cursor-pointer hover:text-gray-900"
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
+        {filteredOrders.map((order, index) => (
+          <Card key={index} className="w-full">
+            <CardHeader>
+              <CardDescription className="flex flex-col gap-4">
+                <div className="flex justify-between items-center gap-2 w-full">
+                  {/* Columna izquierda: checkbox + label */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Checkbox
+                      id={`order-${index}`}
+                      checked={selectedOrders.includes(index)}
+                      onCheckedChange={(checked) =>
+                        toggleOrderSelection(index, !!checked)
+                      }
                     />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setOpen(true)}>
-                      Cambiar estado
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <label
+                      htmlFor={`order-${index}`}
+                      className="truncate text-sm font-medium leading-none"
+                    >
+                      # {order["externalId[].value.orderNumber"]}{" "}
+                      {formatDate(order.createdAt)}
+                    </label>
+                  </div>
+
+                  {/* Columna derecha: precio */}
+                  <span className="shrink-0 text-right">
+                    {formatCurrency(order.priceAfterTax)}
+                  </span>
+                </div>
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex justify-between">
+                <span className="truncate max-w-[60%] md:max-w-[70%] inline-block align-middle text-sm md:text-base">
+                  {order["customer.fullName"]}
+                </span>
+                <span className="text-left"></span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex justify-between items-center">
+                <Badge variant={getBadgeVariant(order["status.description"])} className="text-xs md:text-sm">
+                  {order["status.description"]}
+                </Badge>
+                <div className="flex gap-2 text-gray-700">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <MoreHorizontal
+                        strokeWidth={2.5}
+                        className="w-5 h-5 md:w-6 md:h-6 cursor-pointer hover:text-gray-900"
+                      />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setOpen(true)}>
+                        Cambiar estado
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        </div>
       </div>
 
       {/* Dialog */}

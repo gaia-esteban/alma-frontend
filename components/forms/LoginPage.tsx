@@ -12,6 +12,13 @@ import { colors } from "@/lib/colors";
 import { Card } from "../ui/card";
 import { CardContent } from "../ui/cardContent";
 import { Mail, ArrowLeft, Loader2, AlertCircle, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CardHeader } from "../ui/cardHeader";
 import { CardTitle } from "../ui/cardTitle";
 import { CardDescription } from "../ui/cardDescription";
@@ -21,12 +28,13 @@ import { FormErrors } from "@/types/login";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useStatusOrder } from "@/hooks/useStatusOrder";
+import { useLoginMutation } from "@/store/api/authApi";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const {
     loading,
     error,
-    signInWithGoogle,
     sendOTP,
     verifyOTP,
     clearError,
@@ -34,11 +42,15 @@ export default function LoginPage() {
     setErrorMessage,
   } = useAuth();
 
+  const [login, { isLoading: isLoginLoading }] = useLoginMutation();
+  const [verifyPasscode, { isLoading: isVerifyingPasscode }] = useLoginMutation();
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [shouldFetchOrders, setShouldFetchOrders] = useState(false);
+  const [show401Modal, setShow401Modal] = useState(false);
+  const [modal401Otp, setModal401Otp] = useState("");
 
   useStatusOrder({ skip: !shouldFetchOrders });
 
@@ -51,18 +63,31 @@ export default function LoginPage() {
     clearError();
 
     if (!email.trim()) {
-      setFormErrors({ email: "Email is required" });
+      setFormErrors({ email: "e-mail es requerido" });
       return;
     }
 
     if (!isValidEmail(email)) {
-      setFormErrors({ email: "Please enter a valid email address" });
+      setFormErrors({ email: "Por favor ingresa un e-mail válido" });
       return;
     }
 
-    const success = await sendOTP(email);
-    if (success) {
-      setStep("otp");
+    try {
+      await login({ email }).unwrap();
+      const success = await sendOTP(email);
+      if (success) {
+        setStep("otp");
+      }
+    } catch (err) {
+      const error = err as { status?: number; data?: { message?: string } };
+      if (error?.status === 404) {
+        toast.error("Usuario no autorizado");
+      } else if (error?.status === 401) {
+        setShow401Modal(true);
+      } else {
+        // Handle other errors through the existing error handling mechanism
+        setErrorMessage(error?.data?.message || "An error occurred");
+      }
     }
   };
 
@@ -78,15 +103,6 @@ export default function LoginPage() {
     const success = await verifyOTP(email, otp);
     if (success) {
       setShouldFetchOrders(true);
-      router.push("/purchase-orders");
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setFormErrors({ email: "", otp: "" });
-    clearError();
-    const success = await signInWithGoogle();
-    if (success) {
       router.push("/purchase-orders");
     }
   };
@@ -107,16 +123,16 @@ export default function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
+      className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8"
       style={{
         background: `linear-gradient(135deg, ${colors.primary}0D, ${colors.secondary}0D)`,
       }}
     >
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
         {/* Logo and App Info */}
-        <div className="text-center mb-6 sm:mb-8">
+        <div className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
           <div
-            className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4"
+            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-5 lg:mb-6"
             style={{ backgroundColor: colors.primary }}
           >
             <Image
@@ -124,33 +140,33 @@ export default function LoginPage() {
               alt="Savia Logo"
               width={40}
               height={40}
-              className="object-contain"
+              className="object-contain w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"
             />
           </div>
           <h1
-            className="text-xl sm:text-2xl font-bold mb-1"
+            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 md:mb-2"
             style={{ color: colors.secondary }}
           >
-            Savia 2.0
+            AlMa Consulting
           </h1>
-          <p className="text-sm" style={{ color: colors.mutedForeground }}>
-            Purchase Order Management
+          <p className="text-sm md:text-base lg:text-lg" style={{ color: colors.mutedForeground }}>
+            Automatización de Procesos Contables
           </p>
         </div>
 
         <Card className="w-full">
-          <CardHeader>
-            <CardTitle>
-              {step === "email" ? "Welcome back" : "Enter verification code"}
+          <CardHeader className="p-4 sm:p-6 md:p-8">
+            <CardTitle className="text-xl sm:text-2xl md:text-3xl">
+              {step === "email" ? "Ingreso" : "Enter verification code"}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-sm md:text-base">
               {step === "email"
-                ? "Sign in to your account to continue"
+                ? "Autentícate en la aplicación para continuar"
                 : `We've sent a 6-digit code to ${email}`}
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 md:space-y-6 p-4 pt-0 sm:p-6 sm:pt-0 md:p-8 md:pt-0">
             {/* Error Message */}
             {error && (
               <div
@@ -176,16 +192,17 @@ export default function LoginPage() {
                   <div className="space-y-2">
                     <Input
                       type="email"
-                      placeholder="Enter your email address"
+                      placeholder="Ingresa tu e-mail"
                       value={email}
                       onChange={handleEmailChange}
                       error={!!formErrors.email}
-                      disabled={loading}
+                      disabled={loading || isLoginLoading}
                       autoComplete="email"
+                      className="h-12 md:h-14 text-base md:text-lg"
                     />
                     {formErrors.email && (
                       <p
-                        className="text-sm"
+                        className="text-sm md:text-base"
                         style={{ color: colors.destructive }}
                       >
                         {formErrors.email}
@@ -211,76 +228,23 @@ export default function LoginPage() {
                   )}
 
                   <Button
-                    className="w-full"
-                    disabled={loading || !email.trim()}
+                    className="w-full h-12 md:h-14 text-base md:text-lg"
+                    disabled={loading || isLoginLoading || !email.trim()}
                     onClick={handleEmailSubmit}
                   >
-                    {loading ? (
+                    {loading || isLoginLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
                         Sending code...
                       </>
                     ) : (
                       <>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send verification code
+                        <Mail className="mr-2 h-4 w-4 md:h-5 md:w-5" />
+                        Solicitar código OTP
                       </>
                     )}
                   </Button>
                 </div>
-
-                {/* Divider */}
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span
-                      className="w-full border-t"
-                      style={{ borderColor: colors.border }}
-                    />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span
-                      className="px-2 text-xs"
-                      style={{
-                        backgroundColor: colors.input,
-                        color: colors.mutedForeground,
-                      }}
-                    >
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                {/* Google Sign In */}
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={handleGoogleSignIn}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      />
-                    </svg>
-                  )}
-                  Continue with Google
-                </Button>
               </>
             )}
 
@@ -331,13 +295,13 @@ export default function LoginPage() {
                 </div>
 
                 <Button
-                  className="w-full"
+                  className="w-full h-12 md:h-14 text-base md:text-lg"
                   disabled={loading || otp.length !== 6}
                   onClick={handleOTPSubmit}
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
                       Verifying...
                     </>
                   ) : (
@@ -347,11 +311,11 @@ export default function LoginPage() {
 
                 <Button
                   variant="ghost"
-                  className="w-full"
+                  className="w-full h-12 md:h-14 text-base md:text-lg"
                   onClick={handleBackToEmail}
                   disabled={loading}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="mr-2 h-4 w-4 md:h-5 md:w-5" />
                   Back to email
                 </Button>
 
@@ -377,29 +341,74 @@ export default function LoginPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Terms and Privacy */}
-        <div className="text-center mt-6 text-xs sm:text-sm px-4">
-          <p style={{ color: colors.mutedForeground }}>
-            By continuing, you agree to our{" "}
-            <a
-              href="#"
-              className="hover:underline"
-              style={{ color: colors.primary }}
-            >
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a
-              href="#"
-              className="hover:underline"
-              style={{ color: colors.primary }}
-            >
-              Privacy Policy
-            </a>
-          </p>
-        </div>
       </div>
+
+      {/* 401 Error Modal with OTP Input */}
+      <Dialog open={show401Modal} onOpenChange={setShow401Modal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verificación requerida</DialogTitle>
+            <DialogDescription>
+              Ingresa el código de 6 dígitos de tu aplicación authenticator
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center space-y-4 py-4">
+            <InputOTP
+              maxLength={6}
+              value={modal401Otp}
+              onChange={setModal401Otp}
+            >
+              <InputOTPGroup>
+                <InputOTPSlot index={0} />
+                <InputOTPSlot index={1} />
+              </InputOTPGroup>
+              <InputOTPGroup>
+                <InputOTPSlot index={2} />
+                <InputOTPSlot index={3} />
+              </InputOTPGroup>
+              <InputOTPGroup>
+                <InputOTPSlot index={4} />
+                <InputOTPSlot index={5} />
+              </InputOTPGroup>
+            </InputOTP>
+            <Button
+              onClick={async () => {
+                if (modal401Otp.length === 6) {
+                  try {
+                    await verifyPasscode({
+                      email,
+                      passcode: modal401Otp,
+                    }).unwrap();
+
+                    // Success - redirect to incoming-orders
+                    setShow401Modal(false);
+                    setModal401Otp("");
+                    router.push("/incoming-orders");
+                  } catch (err) {
+                    const error = err as { status?: number; data?: { message?: string } };
+                    if (error?.status === 401) {
+                      toast.error("El código ingresado no es válido");
+                    } else {
+                      toast.error(error?.data?.message || "Error al verificar el código");
+                    }
+                  }
+                }
+              }}
+              disabled={modal401Otp.length !== 6 || isVerifyingPasscode}
+              className="w-full"
+            >
+              {isVerifyingPasscode ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                "Verify"
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

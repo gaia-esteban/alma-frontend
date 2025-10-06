@@ -1,4 +1,4 @@
-# Alma Consulting 2.0 - Frontend Development Guidelines
+# AlMa Consulting - Frontend Development Guidelines
 
 ## Overview
 Alma Consulting is a web platform to allow accounting companies to enhance their products to boost productivity and better serve customers.

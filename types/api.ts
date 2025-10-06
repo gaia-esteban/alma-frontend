@@ -3,6 +3,7 @@
 export interface AuthOTPRequest {
   email: string;
   appType: string;
+  passcode?: string;
 }
 
 export interface AuthOTPResponse {
@@ -25,4 +26,14 @@ export interface AuthVerifyOTPResponse {
     email: string;
     name: string;
   };
+}
+
+export interface LoginRequest {
+  email: string;
+  passcode?: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  message?: string;
 }

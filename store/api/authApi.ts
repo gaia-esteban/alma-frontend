@@ -1,6 +1,6 @@
 // src/store/api/authApi.ts
 import { api } from './baseApi';
-import { AuthOTPRequest, AuthOTPResponse, AuthVerifyOTPRequest, AuthVerifyOTPResponse } from '@/types/api';
+import { AuthOTPRequest, AuthOTPResponse, AuthVerifyOTPRequest, AuthVerifyOTPResponse, LoginRequest, LoginResponse } from '@/types/api';
 
 /**
  * Authentication API endpoints
@@ -32,8 +32,20 @@ export const authApi = api.injectEndpoints({
       }),
     }),
 
+    /**
+     * Validates user email before sending OTP
+     * @param body - Object with user email
+     * @returns { success: boolean, message?: string }
+     */
+    login: builder.mutation<LoginResponse, LoginRequest>({
+      query: (body) => ({
+        url: '/login',
+        method: 'POST',
+        body,
+      }),
+    }),
 
   }),
 });
 
-export const { useSendOtpMutation, useVerifyOtpMutation } = authApi;
+export const { useSendOtpMutation, useVerifyOtpMutation, useLoginMutation } = authApi;
