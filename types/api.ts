@@ -36,4 +36,10 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   message?: string;
+  token?: string;
+  user?: {
+    id: string;
+    email: string;
+    name: string;
+  };
 }

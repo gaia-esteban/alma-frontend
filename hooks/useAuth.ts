@@ -76,7 +76,10 @@ export function useAuth() {
         authType: OTP,
         otp,
       }).unwrap();
-      dispatch(setUser(result));
+
+      // Store credentials using reusable helper
+      storeCredentials(result);
+
       setLoading(false);
       return result;
     } catch (error) {
@@ -85,6 +88,27 @@ export function useAuth() {
       setError("Invalid OTP");
       return false;
     }
+  };
+
+  /**
+   * Store user credentials in Redux
+   * Reusable helper for both OTP and passcode flows
+   */
+  const storeCredentials = (apiResponse: { token?: string; user?: { id: string; email: string; name: string } }) => {
+    if (!apiResponse.token || !apiResponse.user) {
+      console.error("Cannot store credentials: missing token or user data");
+      return;
+    }
+
+    const userData = {
+      user: {
+        uid: apiResponse.user.id,
+        email: apiResponse.user.email,
+        displayName: apiResponse.user.name,
+      },
+      token: apiResponse.token,
+    };
+    dispatch(setUser(userData));
   };
 
   /**
@@ -114,6 +138,7 @@ export function useAuth() {
     signInWithGoogle,
     sendOTP,
     verifyOTP,
+    storeCredentials,
     login,
     logout,
     clearError,

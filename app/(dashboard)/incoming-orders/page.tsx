@@ -1,138 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { CardHeader } from "@/components/ui/cardHeader";
-import { CardDescription } from "@/components/ui/cardDescription";
-import { CardContent } from "@/components/ui/cardContent";
-import { getPurchaseOrder, PurchaseOrder } from "@/types/purchaseOrder";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Menu, MoreHorizontal, Search } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
-import { FileUser } from "lucide-react";
-import Image from "next/image";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery } from "@/store/api/incomingOrdersApi";
+import { Menu, Search } from "lucide-react";
+import { DataTable } from "./data-table";
+import { createColumns } from "./columns";
+import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOrderDetailsModal";
+import { IncomingOrder } from "@/types/incoming-order";
 
 export default function IncomingOrders() {
-  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-  const [open, setOpen] = useState(false);
-  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
-  const [showPendingOnly, setShowPendingOnly] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [searchActive, setSearchActive] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesPending = showPendingOnly
-      ? order["status.description"] === "Factura pendiente"
-      : true;
+  const { data, isLoading, error } = useGetIncomingOrdersQuery({});
+  const [triggerGetOrderById, { isLoading: isLoadingDetails }] = useLazyGetIncomingOrderByIdQuery();
+
+  // Show detailed error information
+  if (error) {
+    console.error("API Error details:", error);
+  }
+
+  const handleDetailsClick = async (order: IncomingOrder) => {
+    try {
+      const result = await triggerGetOrderById(order.id).unwrap();
+      setSelectedOrder(result);
+      setModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching incoming order details:", error);
+    }
+  };
+
+  const filteredOrders = data?.invoices?.filter((order) => {
     const matchesSearch = searchText
-      ? order["customer.fullName"]
-          .toLowerCase()
-          .includes(searchText.toLowerCase())
+      ? order.number.toLowerCase().includes(searchText.toLowerCase()) ||
+        order.purchaseOrder.toLowerCase().includes(searchText.toLowerCase())
       : true;
-    return matchesPending && matchesSearch;
-  });
+    return matchesSearch;
+  }) || [];
 
-  useEffect(() => {
-    getPurchaseOrder().then((data) => setOrders(data));
-  }, []);
-
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case "Totalmente facturada":
-        return "primary";
-      case "Factura pendiente":
-        return "warning";
-      case "Parcialmente recibida":
-        return "warning";
-      default:
-        return "secondary";
-    }
-  };
-
-  const formatDate = (isoString: string) => {
-    const date = new Date(isoString);
-    return (
-      date.toLocaleDateString("es-CO", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }) +
-      " " +
-      date.toLocaleTimeString("es-CO", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-    );
-  };
-
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("es-CO", { style: "currency", currency: "COP" });
-
-  const [images, setImages] = useState<File[]>([]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setImages([...images, ...Array.from(e.target.files)]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, idx) => idx !== index));
-  };
-
-  const toggleSelectAll = (
-    checked: boolean,
-    visibleOrders: PurchaseOrder[]
-  ) => {
-    if (checked) {
-      // Seleccionar todos los índices de las órdenes visibles
-      setSelectedOrders(visibleOrders.map((_, index) => index));
-    } else {
-      // Deseleccionar todos
-      setSelectedOrders([]);
-    }
-  };
-
-  const toggleOrderSelection = (orderIndex: number, checked: boolean) => {
-    // orderIndex: índice dentro de filteredOrders
-    const actualIndex = orders.findIndex(
-      (o) => o === filteredOrders[orderIndex]
-    );
-
-    if (actualIndex === -1) return;
-
-    if (checked) {
-      setSelectedOrders((prev) => [...prev, actualIndex]);
-    } else {
-      setSelectedOrders((prev) => prev.filter((i) => i !== actualIndex));
-    }
-  };
+  const columns = createColumns(handleDetailsClick);
 
   return (
     <main className="w-full min-h-screen p-4 md:p-6 lg:p-8">
@@ -146,7 +56,7 @@ export default function IncomingOrders() {
 
             {!searchActive && (
               <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
-                Incoming orders
+                Facturas de entrada
               </span>
             )}
           </div>
@@ -165,7 +75,7 @@ export default function IncomingOrders() {
               <input
                 autoFocus
                 type="text"
-                placeholder="Buscar por cliente..."
+                placeholder="Search by number or PO..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 onBlur={() => {
@@ -177,236 +87,30 @@ export default function IncomingOrders() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4 sm:gap-6 mb-6">
-          <div className="flex items-center gap-3 justify-center sm:justify-start">
-            <Checkbox
-              id="select-all"
-              className="scale-125 md:scale-150"
-              checked={
-                selectedOrders.length === filteredOrders.length &&
-                filteredOrders.length > 0
-              }
-              onCheckedChange={(checked) =>
-                toggleSelectAll(!!checked, filteredOrders)
-              }
-            />
-            <label htmlFor="select-all" className="text-sm md:text-base font-medium">
-              All
-            </label>
-          </div>
-
-          <div className="flex items-center justify-center gap-3">
-            <Switch
-              id="pending-orders"
-              checked={showPendingOnly}
-              onCheckedChange={setShowPendingOnly}
-              className={`
-            scale-125 md:scale-150
-            data-[state=checked]:bg-primary
-            data-[state=checked]:border-primary
-            [&>span]:bg-white
-          `}
-            />
-            <label
-              htmlFor="pending-orders"
-              className="whitespace-nowrap text-xs md:text-sm font-medium"
-            >
-              Órdenes pendientes
-            </label>
-          </div>
-
-          <div className="flex items-center justify-center sm:justify-end gap-4 text-gray-700">
-            <FileUser
-              strokeWidth={2.5}
-              className="w-6 h-6 md:w-7 md:h-7 cursor-pointer hover:text-gray-900"
-            />
-          </div>
-        </div>
-
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
-        {filteredOrders.map((order, index) => (
-          <Card key={index} className="w-full">
-            <CardHeader>
-              <CardDescription className="flex flex-col gap-4">
-                <div className="flex justify-between items-center gap-2 w-full">
-                  {/* Columna izquierda: checkbox + label */}
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Checkbox
-                      id={`order-${index}`}
-                      checked={selectedOrders.includes(index)}
-                      onCheckedChange={(checked) =>
-                        toggleOrderSelection(index, !!checked)
-                      }
-                    />
-                    <label
-                      htmlFor={`order-${index}`}
-                      className="truncate text-sm font-medium leading-none"
-                    >
-                      # {order["externalId[].value.orderNumber"]}{" "}
-                      {formatDate(order.createdAt)}
-                    </label>
-                  </div>
-
-                  {/* Columna derecha: precio */}
-                  <span className="shrink-0 text-right">
-                    {formatCurrency(order.priceAfterTax)}
-                  </span>
-                </div>
-              </CardDescription>
-            </CardHeader>
-
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex justify-between">
-                <span className="truncate max-w-[60%] md:max-w-[70%] inline-block align-middle text-sm md:text-base">
-                  {order["customer.fullName"]}
-                </span>
-                <span className="text-left"></span>
-              </div>
-              <div className="flex justify-between items-center">
-                <Badge variant={getBadgeVariant(order["status.description"])} className="text-xs md:text-sm">
-                  {order["status.description"]}
-                </Badge>
-                <div className="flex gap-2 text-gray-700">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <MoreHorizontal
-                        strokeWidth={2.5}
-                        className="w-5 h-5 md:w-6 md:h-6 cursor-pointer hover:text-gray-900"
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setOpen(true)}>
-                        Cambiar estado
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {/* Data Table */}
+        <div className="w-full">
+          {isLoading && (
+            <div className="text-center py-8 text-gray-600">
+              Cargando...
+            </div>
+          )}
+          {error && (
+            <div className="text-center py-8 text-red-600">
+              Error al cargar las ordenes.
+            </div>
+          )}
+          {!isLoading && !error && (
+            <DataTable columns={columns} data={filteredOrders} />
+          )}
         </div>
       </div>
 
-      {/* Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl">
-          <DialogHeader className="text-center">
-            <DialogTitle className="text-lg md:text-xl lg:text-2xl font-bold text-center">
-              Actualizar Estado
-            </DialogTitle>
-            <DialogDescription className="text-center text-sm md:text-base">
-              Selecciona el nuevo Estado y agrega comentarios
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Label + Select */}
-          <div className="mt-4">
-            <label className="text-sm md:text-base font-medium mb-1 block">
-              Siguiente Estado
-            </label>
-            <Select>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleccionar estado..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recoleccion-finalizada">
-                  Recolección finalizada
-                </SelectItem>
-                <SelectItem value="transito-acopio">
-                  Tránsito a acopio
-                </SelectItem>
-                <SelectItem value="recibido-acopio">
-                  Recibido en acopio
-                </SelectItem>
-                <SelectItem value="salida-puerto">Salida a puerto</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Label + Textarea */}
-          <div className="mt-4">
-            <label className="text-sm md:text-base font-medium mb-1 block">
-              Comentarios
-            </label>
-            <Textarea
-              placeholder="Agregar comentarios sobre el cambio de estado..."
-              className="w-full text-sm md:text-base"
-            />
-          </div>
-
-          {/* Área de subida */}
-          <label
-            htmlFor="file-upload"
-            className="border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-6 text-center transition-all duration-200 ease-in-out cursor-pointer hover:border-green-400 hover:bg-green-50"
-          >
-            <div className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 md:mb-4 bg-[var(--primary)] rounded-full flex items-center justify-center text-white text-lg">
-              <svg
-                width="20"
-                height="20"
-                className="md:w-6 md:h-6"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21,15 16,10 5,21" />
-              </svg>
-            </div>
-
-            <div className="text-base md:text-lg font-bold text-center">
-              Subir fotografías
-            </div>
-            <div className="text-center text-sm md:text-base">Máximo 3 imágenes • JPG, PNG</div>
-            <input
-              id="file-upload"
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-          </label>
-
-          {/* Vista previa */}
-          {images.length > 0 && (
-            <div className="flex flex-wrap gap-3 mt-4">
-              {images.map((image, idx) => (
-                <div
-                  key={idx}
-                  className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-300"
-                >
-                  <Image
-                    src={URL.createObjectURL(image)}
-                    alt={`preview-${idx}`}
-                    width={96} // 24 * 4 tailwind
-                    height={96}
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(idx)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Footer con botones */}
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => setOpen(false)}>Confirmar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Details Modal */}
+      <IncomingOrderDetailsModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        order={selectedOrder}
+      />
     </main>
   );
 }

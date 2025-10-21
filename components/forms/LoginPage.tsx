@@ -37,6 +37,7 @@ export default function LoginPage() {
     error,
     sendOTP,
     verifyOTP,
+    storeCredentials,
     clearError,
     errorMessage,
     setErrorMessage,
@@ -103,7 +104,7 @@ export default function LoginPage() {
     const success = await verifyOTP(email, otp);
     if (success) {
       setShouldFetchOrders(true);
-      router.push("/purchase-orders");
+      router.push("/incoming-orders");
     }
   };
 
@@ -267,14 +268,12 @@ export default function LoginPage() {
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
                         <InputOTPSlot index={1} />
-                      </InputOTPGroup>
-                      <InputOTPGroup>
                         <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
                       </InputOTPGroup>
                       <InputOTPGroup>
                         <InputOTPSlot index={4} />
                         <InputOTPSlot index={5} />
+                        <InputOTPSlot index={3} />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
@@ -361,12 +360,10 @@ export default function LoginPage() {
               <InputOTPGroup>
                 <InputOTPSlot index={0} />
                 <InputOTPSlot index={1} />
-              </InputOTPGroup>
-              <InputOTPGroup>
                 <InputOTPSlot index={2} />
-                <InputOTPSlot index={3} />
               </InputOTPGroup>
               <InputOTPGroup>
+                <InputOTPSlot index={3} />
                 <InputOTPSlot index={4} />
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
@@ -375,10 +372,13 @@ export default function LoginPage() {
               onClick={async () => {
                 if (modal401Otp.length === 6) {
                   try {
-                    await verifyPasscode({
+                    const result = await verifyPasscode({
                       email,
                       passcode: modal401Otp,
                     }).unwrap();
+
+                    // Store credentials in Redux
+                    storeCredentials(result);
 
                     // Success - redirect to incoming-orders
                     setShow401Modal(false);

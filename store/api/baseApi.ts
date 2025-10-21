@@ -12,12 +12,14 @@ const baseQuery = fetchBaseQuery({
   baseUrl: process.env.NEXT_PUBLIC_API_URL,
   timeout: 35000,
   prepareHeaders: (headers, { getState, endpoint }) => {
-    // Obtener el estado completo de Redux
+    // Get the full Redux state
     const state = getState() as RootState;
 
-    // Solo agregar Authorization si NO es un endpoint de auth
-    const isAuthEndpoint = endpoint?.includes("auth");
+    // Auth endpoint names that should NOT have Authorization header
+    const authEndpoints = ["sendOtp", "verifyOtp", "login"];
+    const isAuthEndpoint = endpoint ? authEndpoints.includes(endpoint) : false;
 
+    // Add Authorization header for non-auth endpoints if token exists
     if (!isAuthEndpoint && state.auth.token) {
       headers.set("Authorization", `Bearer ${state.auth.token}`);
     }
