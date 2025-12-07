@@ -56,6 +56,7 @@ const userColumnConfig = [
 const columnHelper = createColumnHelper<Order>();
 
 // Todas las columnas posibles
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allColumns: Record<string, ColumnDef<Order, any>> = {
   createdAt: columnHelper.accessor(
     row => row.createdAt,

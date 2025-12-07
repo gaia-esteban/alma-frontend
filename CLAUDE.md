@@ -161,16 +161,25 @@ Mobile-first approach with Tailwind breakpoints:
 
 ## Important Implementation Notes
 
-### Firebase Environment Variables
+### Environment Variables
 Required in `.env.local`:
 ```bash
+# Firebase Configuration
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
+
+# API Configuration
+NEXT_PUBLIC_API_URL=http://auto.digital.almafconsultora.com:8080/api
+NEXT_PUBLIC_WEBHOOK_URL=https://auto.digital.almafconsultora.com:8080
 ```
+
+**Note**:
+- `NEXT_PUBLIC_API_URL` uses HTTP for standard API endpoints
+- `NEXT_PUBLIC_WEBHOOK_URL` uses HTTPS for webhook endpoints (export functionality)
 
 ### API Integration
 - Base API URL configured in `store/api/baseApi.ts`

@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Menu, MoreHorizontal, Search } from "lucide-react";
+import { MoreHorizontal, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { FileUser } from "lucide-react";
 import Image from "next/image";
@@ -135,18 +135,14 @@ export default function Home() {
   };
 
   return (
-    <main className="p-4 md:p-6 lg:p-8">
+    <main>
       <div className="flex justify-between items-center mb-4 md:mb-6">
-        {/* Menú + Texto */}
-        <div className="flex items-center space-x-2">
-          <button className="p-2 rounded-md hover:bg-gray-100">
-            <Menu className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
-          </button>
-
+        {/* Title */}
+        <div className="flex items-center">
           {!searchActive && (
-            <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
+            <h1 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
               Active orders
-            </span>
+            </h1>
           )}
         </div>
 

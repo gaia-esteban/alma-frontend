@@ -43,3 +43,40 @@ export interface LoginResponse {
     name: string;
   };
 }
+
+export interface IncomingOrderDetail {
+  id: number;
+  invoice_id: number;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  discount: number;
+  comments: string;
+  sku: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncomingOrder {
+  id: number;
+  number: string;
+  issuanceDate: string;
+  dueDate: string;
+  purchaseOrder: string;
+  paymentMethod: string;
+  paymentForm: string;
+  currency: string;
+  supplierId: string;
+  supplier: any; // JSON RawMessage - can be typed more specifically if needed
+  accountingNumber: string;
+  costCenter: string;
+  createdAt: string;
+  updatedAt: string;
+  details?: IncomingOrderDetail[];
+}
+
+export interface IncomingOrdersResponse {
+  data: IncomingOrder[];
+  total?: number;
+}

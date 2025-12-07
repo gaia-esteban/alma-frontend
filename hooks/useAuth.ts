@@ -13,8 +13,9 @@ import { useSendOtpMutation, useVerifyOtpMutation } from "@/store/api/authApi";
  * like Google Sign-In and OTP verification.
  */
 export function useAuth() {
-  // Read user from Redux store
+  // Read user and hydration state from Redux store
   const user = useSelector((state: RootState) => state.auth.user);
+  const isHydrated = useSelector((state: RootState) => state.auth.isHydrated);
   const dispatch = useDispatch();
 
   // Local loading and error states for auth processes
@@ -133,6 +134,7 @@ export function useAuth() {
 
   return {
     user,
+    isHydrated,
     loading,
     error,
     signInWithGoogle,

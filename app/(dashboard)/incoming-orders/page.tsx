@@ -1,91 +1,136 @@
 "use client";
 
-import { useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery } from "@/store/api/incomingOrdersApi";
-import { Menu, Search } from "lucide-react";
+import { useState, useCallback } from "react";
+import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation } from "@/store/api/incomingOrdersApi";
+import { toast } from "sonner";
+import { Filter, FileSpreadsheet } from "lucide-react";
 import { DataTable } from "./data-table";
 import { createColumns } from "./columns";
 import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOrderDetailsModal";
 import { IncomingOrder } from "@/types/incoming-order";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function IncomingOrders() {
-  const [searchText, setSearchText] = useState("");
-  const [searchActive, setSearchActive] = useState(false);
+  const { isHydrated } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrder | null>(null);
+  const [showFilters, setShowFilters] = useState(true);
+  const [selectedRows, setSelectedRows] = useState<IncomingOrder[]>([]);
 
-  const { data, isLoading, error } = useGetIncomingOrdersQuery({});
-  const [triggerGetOrderById, { isLoading: isLoadingDetails }] = useLazyGetIncomingOrderByIdQuery();
-
-  // Show detailed error information
-  if (error) {
-    console.error("API Error details:", error);
-  }
+  const { data, isLoading, error } = useGetIncomingOrdersQuery({}, {
+    skip: !isHydrated, // Skip query until auth is hydrated
+  });
+  const [triggerGetOrderById] = useLazyGetIncomingOrderByIdQuery();
+  const [exportIncomingOrders, { isLoading: isExporting }] = useExportIncomingOrdersMutation();
 
   const handleDetailsClick = async (order: IncomingOrder) => {
+    // Store the clicked row data
+    setSelectedOrder(order);
+
     try {
-      const result = await triggerGetOrderById(order.id).unwrap();
-      setSelectedOrder(result);
+      // Fetch detailed data from API
+      const orderDetails = await triggerGetOrderById(order.id).unwrap();
+      setSelectedOrderDetails(orderDetails);
       setModalOpen(true);
     } catch (error) {
       console.error("Error fetching incoming order details:", error);
     }
   };
 
-  const filteredOrders = data?.invoices?.filter((order) => {
-    const matchesSearch = searchText
-      ? order.number.toLowerCase().includes(searchText.toLowerCase()) ||
-        order.purchaseOrder.toLowerCase().includes(searchText.toLowerCase())
-      : true;
-    return matchesSearch;
-  }) || [];
+  const handleExport = async () => {
+    if (selectedRows.length === 0) {
+      toast.error("Por favor, selecciona al menos una factura");
+      return;
+    }
+
+    try {
+      const invoiceIds = selectedRows.map(row => row.id);
+      const result = await exportIncomingOrders({
+        invoiceIds,
+        storage: "firebase"
+      }).unwrap();
+
+      toast.success(result.message || "Facturas exportadas exitosamente");
+    } catch (error) {
+      console.error("Error exporting invoices:", error);
+      toast.error("Error al exportar las facturas");
+    }
+  };
+
+  const handleRowSelectionChange = useCallback((rows: IncomingOrder[]) => {
+    setSelectedRows(rows);
+  }, []);
 
   const columns = createColumns(handleDetailsClick);
 
-  return (
-    <main className="w-full min-h-screen p-4 md:p-6 lg:p-8">
-      <div className="w-full max-w-full">
-        <div className="flex justify-between items-center mb-4 md:mb-6">
-          {/* Menú + Texto */}
-          <div className="flex items-center space-x-2">
-            <button className="p-2 rounded-md hover:bg-gray-100">
-              <Menu className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
-            </button>
-
-            {!searchActive && (
-              <span className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
-                Facturas de entrada
-              </span>
-            )}
-          </div>
-
-          {/* Botón de búsqueda / Input */}
-          <div className="relative">
-            {!searchActive && (
-              <button
-                className="p-2 rounded-md hover:bg-gray-100"
-                onClick={() => setSearchActive(true)}
-              >
-                <Search className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
-              </button>
-            )}
-            {searchActive && (
-              <input
-                autoFocus
-                type="text"
-                placeholder="Search by number or PO..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onBlur={() => {
-                  if (searchText === "") setSearchActive(false);
-                }}
-                className="border px-3 py-2 md:py-3 rounded-md w-48 sm:w-64 md:w-72 lg:w-96 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-              />
-            )}
-          </div>
+  // Show loading state while checking localStorage
+  if (!isHydrated) {
+    return (
+      <main className="w-full">
+        <div className="text-center py-8 text-gray-600">
+          Cargando...
         </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="w-full">
+      <div className="w-full max-w-full">
+        <div className="flex items-center mb-4 md:mb-6">
+          <h1 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
+            Facturas de entrada
+          </h1>
+        </div>
+
+        {/* Filter Control Bar */}
+        <TooltipProvider>
+          <div className="mb-4 p-3 border border-gray-300 rounded-lg flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className={`${
+                  showFilters ? "text-blue-600" : "text-gray-600"
+                }`}
+              >
+                <Filter className={`w-4 h-4 ${showFilters ? "text-blue-600" : "text-gray-600"}`} />
+              </Button>
+
+              <Input
+                type="text"
+                placeholder="Buscar facturas de entrada..."
+                className="max-w-sm"
+              />
+            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={selectedRows.length === 0 || isExporting}
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Exportar a Contai</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
 
         {/* Data Table */}
         <div className="w-full">
@@ -100,7 +145,12 @@ export default function IncomingOrders() {
             </div>
           )}
           {!isLoading && !error && (
-            <DataTable columns={columns} data={filteredOrders} />
+            <DataTable
+              columns={columns}
+              data={data?.invoices || []}
+              showFilters={showFilters}
+              onRowSelectionChange={handleRowSelectionChange}
+            />
           )}
         </div>
       </div>
@@ -110,6 +160,7 @@ export default function IncomingOrders() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         order={selectedOrder}
+        orderDetails={selectedOrderDetails}
       />
     </main>
   );

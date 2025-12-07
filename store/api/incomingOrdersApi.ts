@@ -14,6 +14,16 @@ export interface IncomingOrdersQueryParams {
   populate?: boolean;
 }
 
+export interface ExportIncomingOrdersRequest {
+  invoiceIds: number[];
+  storage: string;
+}
+
+export interface ExportIncomingOrdersResponse {
+  message: string;
+  success: boolean;
+}
+
 export const incomingOrdersApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getIncomingOrders: builder.query<IncomingOrdersResponse, IncomingOrdersQueryParams>({
@@ -35,7 +45,18 @@ export const incomingOrdersApi = api.injectEndpoints({
         method: "GET",
       }),
     }),
+    exportIncomingOrders: builder.mutation<ExportIncomingOrdersResponse, ExportIncomingOrdersRequest>({
+      query: (body) => ({
+        url: `${process.env.NEXT_PUBLIC_WEBHOOK_URL}/webhook/56c344c0-d059-4c75-9fa9-eeeb1d2a5364`,
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery } = incomingOrdersApi;
+export const {
+  useGetIncomingOrdersQuery,
+  useLazyGetIncomingOrderByIdQuery,
+  useExportIncomingOrdersMutation,
+} = incomingOrdersApi;

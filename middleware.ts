@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('auth-token')?.value;
-
-  if (!token && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
+  // Auth is handled client-side via Redux + localStorage
+  // Server-side middleware doesn't have access to localStorage
+  // Client-side route protection is handled by Redux state
 
   return NextResponse.next();
 }
