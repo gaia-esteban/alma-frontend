@@ -27,7 +27,6 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { FormErrors } from "@/types/login";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useStatusOrder } from "@/hooks/useStatusOrder";
 import { useVerifyOtpMutation } from "@/store/api/authApi";
 import { toast } from "sonner";
 
