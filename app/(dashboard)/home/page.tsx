@@ -100,7 +100,7 @@ export default function HomePage() {
     // Top suppliers by revenue and order count
     const supplierStats = orders.reduce((acc: Record<string, { revenue: number; orders: number }>, order) => {
       const supplierName = typeof order.supplier === 'object' && order.supplier !== null
-        ? (order.supplier as any).name || order.supplierId
+        ? (order.supplier as { name?: string }).name || order.supplierId
         : order.supplierId;
       const orderTotal = order.details?.reduce((sum, detail) => sum + detail.totalPrice, 0) || 0;
 
@@ -325,7 +325,13 @@ export default function HomePage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }: { name: string; percent: number }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                  label={(entry) => {
+                    const item = dashboardData.paymentMethodsData.find(d => d.name === entry.name);
+                    if (!item) return '';
+                    const total = dashboardData.paymentMethodsData.reduce((sum, d) => sum + d.value, 0);
+                    const percent = (item.value / total) * 100;
+                    return `${entry.name} (${percent.toFixed(0)}%)`;
+                  }}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"

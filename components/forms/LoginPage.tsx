@@ -44,11 +44,8 @@ export default function LoginPage() {
   const [verifyPasscode, { isLoading: isVerifyingPasscode }] = useVerifyOtpMutation();
   const [email, setEmail] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [shouldFetchOrders, setShouldFetchOrders] = useState(false);
   const [show401Modal, setShow401Modal] = useState(false);
   const [modal401Otp, setModal401Otp] = useState("");
-
-  useStatusOrder({ skip: !shouldFetchOrders });
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
