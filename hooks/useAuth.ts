@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { setUser, clearUser } from "@/store/slices/authSlice";
-import { auth, provider, signInWithPopup } from "@/lib/auth";
 import { OTP, SAVIA_CORE } from "@/lib/constants";
 import { useSendOtpMutation, useVerifyOtpMutation } from "@/store/api/authApi";
 import { AuthVerifyOTPResponse } from "@/types/api";
@@ -10,8 +9,7 @@ import { AuthVerifyOTPResponse } from "@/types/api";
 /**
  * useAuth hook
  * Centralized authentication logic for the app.
- * Handles user state via Redux and implements auth flows
- * like Google Sign-In and OTP verification.
+ * Handles user state via Redux and implements OTP verification.
  */
 export function useAuth() {
   // Read user and hydration state from Redux store
@@ -26,24 +24,6 @@ export function useAuth() {
 
   const [sendOtp] = useSendOtpMutation();
   const [verifyOtp] = useVerifyOtpMutation();
-
-  const signInWithGoogle = async () => {
-    setLoading(true);
-    try {
-      const response = await signInWithPopup(auth, provider);
-      console.log("🚀 ~ signInWithGoogle ~ response:", response.user);
-      setLoading(false);
-      //dispatch(setUser(result));
-      return true;
-    } catch (error: any) {
-      console.error("Google sign-in failed", error);
-      setError(error || "Google sign-in failed");
-      setLoading(false);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * Sending OTP to email
@@ -138,7 +118,6 @@ export function useAuth() {
     isHydrated,
     loading,
     error,
-    signInWithGoogle,
     sendOTP,
     verifyOTP,
     storeCredentials,
