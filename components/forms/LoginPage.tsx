@@ -11,7 +11,7 @@ import {
 import { colors } from "@/lib/colors";
 import { Card } from "../ui/card";
 import { CardContent } from "../ui/cardContent";
-import { Mail, ArrowLeft, Loader2, AlertCircle, X } from "lucide-react";
+import { Mail, Loader2, AlertCircle, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -28,26 +28,21 @@ import { FormErrors } from "@/types/login";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useStatusOrder } from "@/hooks/useStatusOrder";
-import { useLoginMutation } from "@/store/api/authApi";
+import { useVerifyOtpMutation } from "@/store/api/authApi";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const {
     loading,
     error,
-    sendOTP,
-    verifyOTP,
     storeCredentials,
     clearError,
     errorMessage,
     setErrorMessage,
   } = useAuth();
 
-  const [login, { isLoading: isLoginLoading }] = useLoginMutation();
-  const [verifyPasscode, { isLoading: isVerifyingPasscode }] = useLoginMutation();
-  const [step, setStep] = useState("email");
+  const [verifyPasscode, { isLoading: isVerifyingPasscode }] = useVerifyOtpMutation();
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [shouldFetchOrders, setShouldFetchOrders] = useState(false);
   const [show401Modal, setShow401Modal] = useState(false);
@@ -73,47 +68,10 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      await login({ email }).unwrap();
-      const success = await sendOTP(email);
-      if (success) {
-        setStep("otp");
-      }
-    } catch (err) {
-      const error = err as { status?: number; data?: { message?: string } };
-      if (error?.status === 404) {
-        toast.error("Usuario no autorizado");
-      } else if (error?.status === 401) {
-        setShow401Modal(true);
-      } else {
-        // Handle other errors through the existing error handling mechanism
-        setErrorMessage(error?.data?.message || "An error occurred");
-      }
-    }
+    // Show 2FA modal directly
+    setShow401Modal(true);
   };
 
-  const handleOTPSubmit = async () => {
-    setFormErrors({});
-    clearError();
-
-    if (otp.length !== 6) {
-      setFormErrors({ otp: "OTP must be exactly 6 digits" });
-      return;
-    }
-
-    const success = await verifyOTP(email, otp);
-    if (success) {
-      setShouldFetchOrders(true);
-      router.push("/incoming-orders");
-    }
-  };
-
-  const handleBackToEmail = () => {
-    setStep("email");
-    setOtp("");
-    setFormErrors({});
-    clearError();
-  };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -158,12 +116,10 @@ export default function LoginPage() {
         <Card className="w-full">
           <CardHeader className="p-4 sm:p-6 md:p-8">
             <CardTitle className="text-xl sm:text-2xl md:text-3xl">
-              {step === "email" ? "Ingreso" : "Enter verification code"}
+              Ingreso
             </CardTitle>
             <CardDescription className="text-sm md:text-base">
-              {step === "email"
-                ? "Autentícate en la aplicación para continuar"
-                : `We've sent a 6-digit code to ${email}`}
+              Autentícate en la aplicación para continuar
             </CardDescription>
           </CardHeader>
 
@@ -187,9 +143,7 @@ export default function LoginPage() {
             )}
 
             {/* Email Step */}
-            {step === "email" && (
-              <>
-                <div className="space-y-4">
+            <div className="space-y-4">
                   <div className="space-y-2">
                     <Input
                       type="email"
@@ -197,7 +151,7 @@ export default function LoginPage() {
                       value={email}
                       onChange={handleEmailChange}
                       error={!!formErrors.email}
-                      disabled={loading || isLoginLoading}
+                      disabled={loading}
                       autoComplete="email"
                       className="h-12 md:h-14 text-base md:text-lg"
                     />
@@ -230,10 +184,10 @@ export default function LoginPage() {
 
                   <Button
                     className="w-full h-12 md:h-14 text-base md:text-lg"
-                    disabled={loading || isLoginLoading || !email.trim()}
+                    disabled={loading || !email.trim()}
                     onClick={handleEmailSubmit}
                   >
-                    {loading || isLoginLoading ? (
+                    {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
                         Sending code...
@@ -245,99 +199,7 @@ export default function LoginPage() {
                       </>
                     )}
                   </Button>
-                </div>
-              </>
-            )}
-
-            {/* OTP Step */}
-            {step === "otp" && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-center">
-                    <InputOTP
-                      maxLength={6}
-                      value={otp}
-                      onChange={(value) => {
-                        setOtp(value);
-                        if (formErrors.otp) {
-                          setFormErrors({ ...formErrors, otp: undefined });
-                        }
-                      }}
-                      disabled={loading}
-                    >
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                      </InputOTPGroup>
-                      <InputOTPGroup>
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                        <InputOTPSlot index={3} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-                  {formErrors.otp && (
-                    <p
-                      className="text-sm text-center"
-                      style={{ color: colors.destructive }}
-                    >
-                      {formErrors.otp}
-                    </p>
-                  )}
-                  <p
-                    className="text-xs text-center"
-                    style={{ color: colors.mutedForeground }}
-                  >
-                    Try: 123456
-                  </p>
-                </div>
-
-                <Button
-                  className="w-full h-12 md:h-14 text-base md:text-lg"
-                  disabled={loading || otp.length !== 6}
-                  onClick={handleOTPSubmit}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    "Verify and continue"
-                  )}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  className="w-full h-12 md:h-14 text-base md:text-lg"
-                  onClick={handleBackToEmail}
-                  disabled={loading}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                  Back to email
-                </Button>
-
-                {/* Resend OTP */}
-                <div className="text-center">
-                  <p
-                    className="text-sm"
-                    style={{ color: colors.mutedForeground }}
-                  >
-                    Didn&apos;t receive the code?{" "}
-                    <button
-                      type="button"
-                      className="font-medium hover:underline"
-                      style={{ color: colors.primary }}
-                      onClick={() => sendOTP(email)}
-                      disabled={loading}
-                    >
-                      Resend
-                    </button>
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -374,7 +236,9 @@ export default function LoginPage() {
                   try {
                     const result = await verifyPasscode({
                       email,
-                      passcode: modal401Otp,
+                      otp: modal401Otp,
+                      appType: "web",
+                      authType: "otp",
                     }).unwrap();
 
                     // Store credentials in Redux

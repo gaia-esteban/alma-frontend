@@ -3,7 +3,12 @@ import { api } from "./baseApi";
 import { IncomingOrder } from "@/types/incoming-order";
 
 export interface IncomingOrdersResponse {
-  invoices: IncomingOrder[];
+  data: IncomingOrder[];
+  total: number;
+}
+
+export interface IncomingOrderByIdResponse {
+  data: IncomingOrder;
   total: number;
 }
 
@@ -15,8 +20,8 @@ export interface IncomingOrdersQueryParams {
 }
 
 export interface ExportIncomingOrdersRequest {
-  invoiceIds: number[];
-  storage: string;
+  invoices: number[];
+  consecutive: string;
 }
 
 export interface ExportIncomingOrdersResponse {
@@ -39,7 +44,7 @@ export const incomingOrdersApi = api.injectEndpoints({
         },
       }),
     }),
-    getIncomingOrderById: builder.query<IncomingOrder, number>({
+    getIncomingOrderById: builder.query<IncomingOrderByIdResponse, number>({
       query: (id) => ({
         url: `/incoming-orders/${id}`,
         method: "GET",
@@ -47,7 +52,7 @@ export const incomingOrdersApi = api.injectEndpoints({
     }),
     exportIncomingOrders: builder.mutation<ExportIncomingOrdersResponse, ExportIncomingOrdersRequest>({
       query: (body) => ({
-        url: `${process.env.NEXT_PUBLIC_WEBHOOK_URL}/webhook/56c344c0-d059-4c75-9fa9-eeeb1d2a5364`,
+        url: "/incoming-orders/export",
         method: "POST",
         body,
       }),

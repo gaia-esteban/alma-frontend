@@ -5,6 +5,7 @@ import { setUser, clearUser } from "@/store/slices/authSlice";
 import { auth, provider, signInWithPopup } from "@/lib/auth";
 import { OTP, SAVIA_CORE } from "@/lib/constants";
 import { useSendOtpMutation, useVerifyOtpMutation } from "@/store/api/authApi";
+import { AuthVerifyOTPResponse } from "@/types/api";
 
 /**
  * useAuth hook
@@ -95,19 +96,19 @@ export function useAuth() {
    * Store user credentials in Redux
    * Reusable helper for both OTP and passcode flows
    */
-  const storeCredentials = (apiResponse: { token?: string; user?: { id: string; email: string; name: string } }) => {
-    if (!apiResponse.token || !apiResponse.user) {
+  const storeCredentials = (apiResponse: AuthVerifyOTPResponse) => {
+    if (!apiResponse.data?.token || !apiResponse.data?.user) {
       console.error("Cannot store credentials: missing token or user data");
       return;
     }
 
     const userData = {
       user: {
-        uid: apiResponse.user.id,
-        email: apiResponse.user.email,
-        displayName: apiResponse.user.name,
+        uid: apiResponse.data.user.id.toString(),
+        email: apiResponse.data.user.email,
+        displayName: apiResponse.data.user.name,
       },
-      token: apiResponse.token,
+      token: apiResponse.data.token,
     };
     dispatch(setUser(userData));
   };

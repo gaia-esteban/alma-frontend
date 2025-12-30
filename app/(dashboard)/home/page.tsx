@@ -42,11 +42,11 @@ export default function HomePage() {
 
   // Calculate KPIs and chart data
   const dashboardData = useMemo(() => {
-    if (!data?.invoices) {
+    if (!data?.data) {
       return null;
     }
 
-    const orders = data.invoices;
+    const orders = data.data;
 
     // Calculate total revenue from order details
     const totalRevenue = orders.reduce((sum, order) => {

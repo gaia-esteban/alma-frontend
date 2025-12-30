@@ -17,12 +17,13 @@ import {
 } from "@/components/ui/table";
 import { IncomingOrder } from "@/types/incoming-order";
 import { IncomingOrderDetail } from "@/types/incoming-order-detail";
+import { IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
 
 interface IncomingOrderDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   order: IncomingOrder | null;
-  orderDetails: IncomingOrder | null;
+  orderDetails: IncomingOrderByIdResponse | null;
 }
 
 export function IncomingOrderDetailsModal({
@@ -36,7 +37,7 @@ export function IncomingOrderDetailsModal({
   const supplier = order.supplier as { name?: string } | undefined;
   const modalTitle = `${order.number} - ${supplier?.name || ""}`;
 
-  const details = orderDetails?.details || [];
+  const details = orderDetails?.data?.details || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,14 +80,14 @@ export function IncomingOrderDetailsModal({
                       <TableCell className="text-right whitespace-nowrap">
                         {new Intl.NumberFormat("es-CO", {
                           style: "currency",
-                          currency: orderDetails?.currency || "COP",
+                          currency: orderDetails?.data?.currency || "COP",
                           minimumFractionDigits: 0,
                         }).format(detail.unitPrice)}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {new Intl.NumberFormat("es-CO", {
                           style: "currency",
-                          currency: orderDetails?.currency || "COP",
+                          currency: orderDetails?.data?.currency || "COP",
                           minimumFractionDigits: 0,
                         }).format(detail.totalPrice)}
                       </TableCell>

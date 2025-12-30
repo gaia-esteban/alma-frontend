@@ -3,17 +3,46 @@
 import { useState } from "react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
+import { useVerifyOtpMutation } from "@/store/api/authApi";
+import { SAVIA_CORE, OTP } from "@/lib/constants";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface OtpVerificationProps {
-  onVerify: (otp: string) => void;
-  loading?: boolean;
+  email: string;
+  onSuccess: (result: any) => void;
+  onError?: (error: string) => void;
 }
 
-export function OtpVerification({ onVerify, loading }: OtpVerificationProps) {
+export function OtpVerification({ email, onSuccess, onError }: OtpVerificationProps) {
   const [otp, setOtp] = useState("");
+  const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
 
-  const handleSubmit = () => {
-    onVerify(otp);
+  const handleSubmit = async () => {
+    if (otp.length !== 6) {
+      toast.error("Please enter a 6-digit code");
+      return;
+    }
+
+    try {
+      const result = await verifyOtp({
+        email,
+        appType: SAVIA_CORE,
+        authType: OTP,
+        otp,
+      }).unwrap();
+
+      onSuccess(result);
+    } catch (err) {
+      const error = err as { status?: number; data?: { message?: string } };
+      const errorMessage = error?.data?.message || "Invalid OTP code";
+
+      if (onError) {
+        onError(errorMessage);
+      } else {
+        toast.error(errorMessage);
+      }
+    }
   };
 
   return (
@@ -35,8 +64,19 @@ export function OtpVerification({ onVerify, loading }: OtpVerificationProps) {
         </InputOTPGroup>
       </InputOTP>
 
-      <Button onClick={handleSubmit} disabled={loading}>
-        {loading ? "Verifying..." : "Verify OTP"}
+      <Button
+        onClick={handleSubmit}
+        disabled={isLoading || otp.length !== 6}
+        className="w-full"
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Verifying...
+          </>
+        ) : (
+          "Verify OTP"
+        )}
       </Button>
     </div>
   );

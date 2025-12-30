@@ -20,7 +20,7 @@ export const useStatusOrder = (options?: { skip?: boolean }) => {
   }, [queryResult.data, dispatch]);
 
   return {
-    orders: queryResult.data?.items || [],
+    orders: queryResult.data?.data || [],
     total: queryResult.data?.total || 0,
     isLoading: queryResult.isLoading,
     isError: queryResult.isError,

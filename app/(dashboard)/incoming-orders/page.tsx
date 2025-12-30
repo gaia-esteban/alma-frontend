@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation } from "@/store/api/incomingOrdersApi";
+import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation, IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
 import { toast } from "sonner";
 import { Filter, FileSpreadsheet } from "lucide-react";
 import { DataTable } from "./data-table";
@@ -22,7 +22,7 @@ export default function IncomingOrders() {
   const { isHydrated } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrder | null>(null);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrderByIdResponse | null>(null);
   const [showFilters, setShowFilters] = useState(true);
   const [selectedRows, setSelectedRows] = useState<IncomingOrder[]>([]);
 
@@ -53,10 +53,10 @@ export default function IncomingOrders() {
     }
 
     try {
-      const invoiceIds = selectedRows.map(row => row.id);
+      const invoices = selectedRows.map(row => row.id);
       const result = await exportIncomingOrders({
-        invoiceIds,
-        storage: "firebase"
+        invoices,
+        consecutive: "611"
       }).unwrap();
 
       toast.success(result.message || "Facturas exportadas exitosamente");
@@ -147,7 +147,7 @@ export default function IncomingOrders() {
           {!isLoading && !error && (
             <DataTable
               columns={columns}
-              data={data?.invoices || []}
+              data={data?.data || []}
               showFilters={showFilters}
               onRowSelectionChange={handleRowSelectionChange}
             />

@@ -13,7 +13,7 @@ export interface StatusOrderItem {
 }
 
 export interface StatusOrderResponse {
-  items: StatusOrderItem[];
+  data: StatusOrderItem[];
   total: number;
 }
 

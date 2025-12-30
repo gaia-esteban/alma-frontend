@@ -20,11 +20,22 @@ export interface AuthVerifyOTPRequest {
 }
 
 export interface AuthVerifyOTPResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      role: string;
+      active: boolean;
+      status: string;
+      otpkey: string;
+      company_id: number;
+      createdAt: string;
+      updatedAt: string;
+    };
+    token: string;
   };
 }
 
@@ -78,5 +89,5 @@ export interface IncomingOrder {
 
 export interface IncomingOrdersResponse {
   data: IncomingOrder[];
-  total?: number;
+  total: number;
 }
