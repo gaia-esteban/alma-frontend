@@ -56,7 +56,7 @@ export default function IncomingOrders() {
       const invoices = selectedRows.map(row => row.id);
       const result = await exportIncomingOrders({
         invoices,
-        consecutive: "611"
+        consecutive: 611
       }).unwrap();
 
       toast.success(result.message || "Facturas exportadas exitosamente");
