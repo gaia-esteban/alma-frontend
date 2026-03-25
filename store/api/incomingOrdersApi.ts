@@ -21,7 +21,7 @@ export interface IncomingOrdersQueryParams {
 
 export interface ExportIncomingOrdersRequest {
   invoices: number[];
-  consecutive: string;
+  consecutive: number;
 }
 
 export interface ExportIncomingOrdersResponse {
