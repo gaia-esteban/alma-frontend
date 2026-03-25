@@ -41,8 +41,8 @@ npm run lint
 - **Lucide React** for icons
 
 ### Authentication
-- **Firebase** for authentication (Google OAuth + OTP via email)
-- Custom `useAuth` hook wraps Firebase auth with Redux state management
+- **API-based authentication** using OTP (One-Time Password) via email
+- Custom `useAuth` hook manages auth state with Redux
 
 ## Project Structure
 
@@ -60,10 +60,10 @@ npm run lint
 │   ├── features/                # Feature-specific components
 │   └── auth/                    # Auth-related components
 ├── hooks/
-│   ├── useAuth.ts               # Authentication hook (Firebase + Redux)
+│   ├── useAuth.ts               # Authentication hook (API + Redux)
 │   └── useStatusOrder.ts        # Purchase order status hook
 ├── lib/
-│   ├── auth.ts                  # Firebase configuration and exports
+│   ├── auth.ts                  # Deprecated (previously Firebase config)
 │   ├── colors.ts                # Centralized color palette
 │   ├── constants.ts             # App constants
 │   └── utils.ts                 # Utility functions (cn, etc.)
@@ -101,14 +101,13 @@ style={{ backgroundColor: colors.primary }}
 ```
 
 ### Authentication Flow
-1. **OTP Flow** (primary): Email → Send OTP → Verify OTP → Login
-2. **Google OAuth** (secondary, optional): Firebase Google sign-in popup
+**OTP Flow**: Email → Send OTP → Verify OTP → Login
 
 The `useAuth` hook manages:
 - `sendOTP(email)` - Send OTP via API
 - `verifyOTP(email, otp)` - Verify OTP and set user in Redux
-- `signInWithGoogle()` - Google OAuth via Firebase
 - User state stored in Redux (`store/slices/authSlice.ts`)
+- Token stored in Redux for API authentication
 
 ### Redux + RTK Query Integration
 Store configuration in `store/index.ts`:
@@ -164,17 +163,11 @@ Mobile-first approach with Tailwind breakpoints:
 ### Environment Variables
 Required in `.env.local`:
 ```bash
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
-NEXT_PUBLIC_FIREBASE_APP_ID=
-
 # API Configuration
 NEXT_PUBLIC_API_URL=http://auto.digital.almafconsultora.com:8080/api
 NEXT_PUBLIC_WEBHOOK_URL=https://auto.digital.almafconsultora.com:8080
+NEXT_PUBLIC_APP_NAME=Alma Consulting
+NEXT_PUBLIC_APP_VERSION=2.0.0
 ```
 
 **Note**:

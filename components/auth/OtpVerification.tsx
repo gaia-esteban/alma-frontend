@@ -8,9 +8,23 @@ import { SAVIA_CORE, OTP } from "@/lib/constants";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+interface VerifyOtpResult {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      role: string;
+    };
+    token: string;
+  };
+}
+
 interface OtpVerificationProps {
   email: string;
-  onSuccess: (result: any) => void;
+  onSuccess: (result: VerifyOtpResult) => void;
   onError?: (error: string) => void;
 }
 

@@ -27,7 +27,6 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { FormErrors } from "@/types/login";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useStatusOrder } from "@/hooks/useStatusOrder";
 import { useVerifyOtpMutation } from "@/store/api/authApi";
 import { toast } from "sonner";
 
@@ -44,11 +43,8 @@ export default function LoginPage() {
   const [verifyPasscode, { isLoading: isVerifyingPasscode }] = useVerifyOtpMutation();
   const [email, setEmail] = useState("");
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [shouldFetchOrders, setShouldFetchOrders] = useState(false);
   const [show401Modal, setShow401Modal] = useState(false);
   const [modal401Otp, setModal401Otp] = useState("");
-
-  useStatusOrder({ skip: !shouldFetchOrders });
 
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
