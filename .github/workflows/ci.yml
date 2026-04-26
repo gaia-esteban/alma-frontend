@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies (lockfile-strict)
+        run: npm ci
+
+      - name: Audit dependencies (block on critical)
+        run: npm audit --audit-level=critical
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Generate SBOM (CycloneDX)
+        run: npm sbom --sbom-format=cyclonedx > sbom.json
+
+      - name: Package standalone bundle
+        run: |
+          mkdir -p deploy
+          cp -r .next/standalone/. deploy/
+          cp -r .next/static deploy/.next/static
+          cp -r public deploy/public
+          tar -czf alma-frontend-${{ github.sha }}.tar.gz -C deploy .
+          sha256sum alma-frontend-${{ github.sha }}.tar.gz \
+            > alma-frontend-${{ github.sha }}.tar.gz.sha256
+
+      - name: Upload deploy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alma-frontend-${{ github.sha }}
+          path: |
+            alma-frontend-${{ github.sha }}.tar.gz
+            alma-frontend-${{ github.sha }}.tar.gz.sha256
+            sbom.json
+          retention-days: 30
