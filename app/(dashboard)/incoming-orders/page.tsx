@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { colors } from "@/lib/colors";
 
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
@@ -76,7 +77,7 @@ export default function IncomingOrders() {
   if (!isHydrated) {
     return (
       <main className="w-full">
-        <div className="text-center py-8 text-gray-600">
+        <div className="text-center py-8" style={{ color: colors.mutedForeground }}>
           Cargando...
         </div>
       </main>
@@ -87,24 +88,31 @@ export default function IncomingOrders() {
     <main className="w-full">
       <div className="w-full max-w-full">
         <div className="flex items-center mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
+          <h1
+            className="text-lg md:text-xl lg:text-2xl font-semibold"
+            style={{ color: colors.foreground }}
+          >
             Facturas de entrada
           </h1>
         </div>
 
         {/* Filter Control Bar */}
         <TooltipProvider>
-          <div className="mb-4 p-3 border border-gray-300 rounded-lg flex items-center justify-between gap-3">
+          <div
+            className="mb-4 p-3 rounded-lg flex items-center justify-between gap-3"
+            style={{ border: `1px solid ${colors.border}`, backgroundColor: colors.surface ?? '#fff' }}
+          >
             <div className="flex items-center gap-3 flex-1">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className={`${
-                  showFilters ? "text-blue-600" : "text-gray-600"
-                }`}
+                style={{ color: showFilters ? colors.primary : colors.mutedForeground }}
               >
-                <Filter className={`w-4 h-4 ${showFilters ? "text-blue-600" : "text-gray-600"}`} />
+                <Filter
+                  className="w-4 h-4"
+                  style={{ color: showFilters ? colors.primary : colors.mutedForeground }}
+                />
               </Button>
 
               <Input
@@ -135,12 +143,12 @@ export default function IncomingOrders() {
         {/* Data Table */}
         <div className="w-full">
           {isLoading && (
-            <div className="text-center py-8 text-gray-600">
+            <div className="text-center py-8" style={{ color: colors.mutedForeground }}>
               Cargando...
             </div>
           )}
           {error && (
-            <div className="text-center py-8 text-red-600">
+            <div className="text-center py-8" style={{ color: colors.destructive }}>
               Error al cargar las ordenes.
             </div>
           )}

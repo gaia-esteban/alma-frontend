@@ -9,9 +9,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { colors } from "@/lib/colors";
-import { Card } from "../ui/card";
-import { CardContent } from "../ui/cardContent";
-import { Mail, Loader2, AlertCircle, X } from "lucide-react";
+import { Loader2, AlertCircle, X, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CardHeader } from "../ui/cardHeader";
-import { CardTitle } from "../ui/cardTitle";
-import { CardDescription } from "../ui/cardDescription";
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { FormErrors } from "@/types/login";
@@ -53,21 +48,16 @@ export default function LoginPage() {
   const handleEmailSubmit = async () => {
     setFormErrors({});
     clearError();
-
     if (!email.trim()) {
-      setFormErrors({ email: "e-mail es requerido" });
+      setFormErrors({ email: "El e-mail es requerido" });
       return;
     }
-
     if (!isValidEmail(email)) {
       setFormErrors({ email: "Por favor ingresa un e-mail válido" });
       return;
     }
-
-    // Show 2FA modal directly
     setShow401Modal(true);
   };
-
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
@@ -77,139 +67,179 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 md:p-6 lg:p-8"
-      style={{
-        background: `linear-gradient(135deg, ${colors.primary}0D, ${colors.secondary}0D)`,
-      }}
-    >
-      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
-        {/* Logo and App Info */}
-        <div className="text-center mb-6 sm:mb-8 md:mb-10 lg:mb-12">
-          <div
-            className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 md:mb-5 lg:mb-6"
-            style={{ backgroundColor: colors.primary }}
+    <div className="min-h-screen flex flex-col lg:flex-row">
+
+      {/* ── Brand panel ─────────────────────────────── */}
+      <div
+        className="relative flex flex-col justify-between p-8 lg:p-12 overflow-hidden lg:min-h-screen lg:w-[44%]"
+        style={{ backgroundColor: colors.secondary }}
+      >
+        {/* Decorative rings */}
+        <div className="pointer-events-none absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full border"
+          style={{ borderColor: `${colors.primary}18` }} />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-[280px] h-[280px] rounded-full border"
+          style={{ borderColor: `${colors.primary}0C` }} />
+        <div className="pointer-events-none absolute -bottom-28 -left-28 w-[360px] h-[360px] rounded-full border"
+          style={{ borderColor: `${colors.primary}0A` }} />
+
+        {/* Logo */}
+        <div className="relative z-10">
+          <Image
+            src="/alma_firma_consultora_logo.jpeg"
+            alt="AlMa Firma Consultora"
+            width={56}
+            height={56}
+            className="rounded-lg"
+          />
+        </div>
+
+        {/* Headline */}
+        <div className="relative z-10 py-8">
+          <span
+            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] mb-6"
+            style={{ color: colors.primary }}
           >
-            <Image
-              src="/Icono.jpg"
-              alt="Savia Logo"
-              width={40}
-              height={40}
-              className="object-contain w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"
-            />
-          </div>
-          <h1
-            className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-1 md:mb-2"
-            style={{ color: colors.secondary }}
-          >
-            AlMa Consulting
+            <span className="w-5 h-px bg-current" />
+            Plataforma Contable
+          </span>
+          <h1 className="text-3xl lg:text-[2.6rem] font-bold text-white leading-tight tracking-tight mb-4">
+            Tu contabilidad,<br />
+            <span style={{ color: colors.primary }}>elevada.</span>
           </h1>
-          <p className="text-sm md:text-base lg:text-lg" style={{ color: colors.mutedForeground }}>
-            Automatización de Procesos Contables
+          <p className="text-sm leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.48)' }}>
+            Un espacio unificado para firmas contables que automatizan flujos de trabajo y sirven a sus clientes con precisión.
           </p>
         </div>
 
-        <Card className="w-full">
-          <CardHeader className="p-4 sm:p-6 md:p-8">
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl">
-              Ingreso
-            </CardTitle>
-            <CardDescription className="text-sm md:text-base">
-              Autentícate en la aplicación para continuar
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4 md:space-y-6 p-4 pt-0 sm:p-6 sm:pt-0 md:p-8 md:pt-0">
-            {/* Error Message */}
-            {error && (
-              <div
-                className="border rounded-md p-3"
-                style={{
-                  backgroundColor: `${colors.destructive}1A`,
-                  borderColor: `${colors.destructive}33`,
-                }}
-              >
-                <p
-                  className="text-sm text-center"
-                  style={{ color: colors.destructive }}
-                >
-                  {error}
-                </p>
-              </div>
-            )}
-
-            {/* Email Step */}
-            <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Input
-                      type="email"
-                      placeholder="Ingresa tu e-mail"
-                      value={email}
-                      onChange={handleEmailChange}
-                      error={!!formErrors.email}
-                      disabled={loading}
-                      autoComplete="email"
-                      className="h-12 md:h-14 text-base md:text-lg"
-                    />
-                    {formErrors.email && (
-                      <p
-                        className="text-sm md:text-base"
-                        style={{ color: colors.destructive }}
-                      >
-                        {formErrors.email}
-                      </p>
-                    )}
-                  </div>
-                  {errorMessage && (
-                    <Alert
-                      variant="destructive"
-                      className="relative pr-10 mb-4"
-                    >
-                      <AlertCircle className="h-4 w-4 text-red-500" />
-                      <AlertTitle>Error</AlertTitle>
-                      <AlertDescription>{errorMessage}</AlertDescription>
-                      <button
-                        onClick={() => setErrorMessage("")}
-                        className="absolute right-2 top-2 text-sm text-muted-foreground hover:text-foreground"
-                        aria-label="Cerrar"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </Alert>
-                  )}
-
-                  <Button
-                    className="w-full h-12 md:h-14 text-base md:text-lg"
-                    disabled={loading || !email.trim()}
-                    onClick={handleEmailSubmit}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 md:h-5 md:w-5 animate-spin" />
-                        Sending code...
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                        Solicitar código OTP
-                      </>
-                    )}
-                  </Button>
+        {/* Stats */}
+        <div
+          className="relative z-10 flex gap-8 pt-6"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.09)' }}
+        >
+          {[
+            { value: '98%', label: 'Satisfacción' },
+            { value: '3×', label: 'Más rápido' },
+            { value: 'ISO 27001', label: 'Certificado' },
+          ].map(({ value, label }) => (
+            <div key={label}>
+              <div className="text-lg font-bold text-white leading-tight">{value}</div>
+              <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.38)' }}>{label}</div>
             </div>
-          </CardContent>
-        </Card>
+          ))}
+        </div>
       </div>
 
-      {/* 401 Error Modal with OTP Input */}
+      {/* ── Form panel ──────────────────────────────── */}
+      <div
+        className="flex-1 flex items-center justify-center p-8 lg:p-16 lg:min-h-screen"
+        style={{ backgroundColor: colors.background }}
+      >
+        <div className="w-full max-w-sm">
+
+          {/* Form header */}
+          <div className="mb-8">
+            <h2
+              className="text-2xl font-bold tracking-tight mb-2"
+              style={{ color: colors.foreground }}
+            >
+              Bienvenido de vuelta
+            </h2>
+            <p className="text-sm" style={{ color: colors.mutedForeground }}>
+              Accedé a tu espacio AlMa de forma segura con código de un solo uso.
+            </p>
+          </div>
+
+          {/* API error */}
+          {error && (
+            <div
+              className="rounded-lg p-3 mb-5 text-sm text-center"
+              style={{
+                backgroundColor: `${colors.destructive}18`,
+                borderColor: `${colors.destructive}30`,
+                color: colors.destructive,
+                border: '1px solid',
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Alert error */}
+          {errorMessage && (
+            <Alert variant="destructive" className="relative pr-10 mb-5">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+              <button
+                onClick={() => setErrorMessage("")}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </Alert>
+          )}
+
+          {/* Email field */}
+          <div className="space-y-2 mb-5">
+            <label
+              className="block text-sm font-semibold"
+              style={{ color: colors.foreground }}
+            >
+              Correo electrónico
+            </label>
+            <Input
+              type="email"
+              placeholder="tu@empresa.com"
+              value={email}
+              onChange={handleEmailChange}
+              error={!!formErrors.email}
+              disabled={loading}
+              autoComplete="email"
+              onKeyDown={(e) => e.key === 'Enter' && handleEmailSubmit()}
+            />
+            {formErrors.email && (
+              <p className="text-xs" style={{ color: colors.destructive }}>
+                {formErrors.email}
+              </p>
+            )}
+          </div>
+
+          {/* Submit */}
+          <Button
+            className="w-full"
+            disabled={loading || !email.trim()}
+            onClick={handleEmailSubmit}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando código...
+              </>
+            ) : (
+              <>
+                Solicitar código OTP
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
+
+          <p className="text-xs text-center mt-5" style={{ color: colors.mutedForeground }}>
+            Recibirás un código de 6 dígitos en tu correo.
+          </p>
+        </div>
+      </div>
+
+      {/* ── OTP Dialog ──────────────────────────────── */}
       <Dialog open={show401Modal} onOpenChange={setShow401Modal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Verificación requerida</DialogTitle>
             <DialogDescription>
-              Ingresa el código de 6 dígitos de tu aplicación authenticator
+              Ingresá el código de 6 dígitos enviado a {email || 'tu correo'}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col items-center space-y-4 py-4">
+          <div className="flex flex-col items-center space-y-5 py-4">
             <InputOTP
               maxLength={6}
               value={modal401Otp}
@@ -236,11 +266,7 @@ export default function LoginPage() {
                       appType: "web",
                       authType: "otp",
                     }).unwrap();
-
-                    // Store credentials in Redux
                     storeCredentials(result);
-
-                    // Success - redirect to incoming-orders
                     setShow401Modal(false);
                     setModal401Otp("");
                     router.push("/incoming-orders");
@@ -263,7 +289,7 @@ export default function LoginPage() {
                   Verificando...
                 </>
               ) : (
-                "Verify"
+                "Verificar e ingresar"
               )}
             </Button>
           </div>
