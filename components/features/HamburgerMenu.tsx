@@ -3,14 +3,24 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, FileText, LogOut } from 'lucide-react';
+import { Menu, Home, FileText, LogOut, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/lib/colors';
 import Image from 'next/image';
 
-const navItems = [
-  { label: 'Inicio', href: '/home', icon: Home },
-  { label: 'Facturas de entrada', href: '/incoming-orders', icon: FileText },
+const navSections = [
+  {
+    items: [
+      { label: 'Inicio', href: '/home', icon: Home },
+      { label: 'Facturas de entrada', href: '/incoming-orders', icon: FileText },
+    ],
+  },
+  {
+    label: 'Maestros',
+    items: [
+      { label: 'Proveedores', href: '/suppliers', icon: Users },
+    ],
+  },
 ];
 
 export function HamburgerMenu() {
@@ -70,32 +80,46 @@ export function HamburgerMenu() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex flex-col gap-0.5 p-3 mt-2">
-          {navItems.map(({ label, href, icon: Icon }) => {
-            const isActive = pathname === href || pathname?.startsWith(href + '/');
-            return (
-              <button
-                key={href}
-                onClick={() => handleNavigation(href)}
-                className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
-                style={{
-                  backgroundColor: isActive ? `${colors.primary}22` : 'transparent',
-                  color: isActive ? colors.primary : 'rgba(255,255,255,0.55)',
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)';
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
-                }}
-              >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                {label}
-              </button>
-            );
-          })}
+        <nav className="flex flex-col gap-0 p-3 mt-2 overflow-y-auto">
+          {navSections.map((section, si) => (
+            <div key={si} className={si > 0 ? 'mt-4' : ''}>
+              {section.label && (
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.12em] px-3 mb-1"
+                  style={{ color: 'rgba(255,255,255,0.28)' }}
+                >
+                  {section.label}
+                </p>
+              )}
+              <div className="flex flex-col gap-0.5">
+                {section.items.map(({ label, href, icon: Icon }) => {
+                  const isActive = pathname === href || pathname?.startsWith(href + '/');
+                  return (
+                    <button
+                      key={href}
+                      onClick={() => handleNavigation(href)}
+                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors"
+                      style={{
+                        backgroundColor: isActive ? `${colors.primary}22` : 'transparent',
+                        color: isActive ? colors.primary : 'rgba(255,255,255,0.55)',
+                      }}
+                      onMouseEnter={e => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)';
+                        if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                      }}
+                      onMouseLeave={e => {
+                        if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
+                        if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.55)';
+                      }}
+                    >
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Bottom section */}
