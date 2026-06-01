@@ -71,25 +71,29 @@ export default function LoginPage() {
 
       {/* ── Brand panel ─────────────────────────────── */}
       <div
-        className="relative flex flex-col justify-between p-8 lg:p-12 overflow-hidden lg:min-h-screen lg:w-[44%]"
-        style={{ backgroundColor: colors.secondary }}
+        className="relative flex flex-col p-8 lg:p-12 overflow-hidden lg:min-h-screen lg:w-[44%]"
+        style={{
+          background: `linear-gradient(180deg, #1a4a6e 0%, #1a3a55 45%, ${colors.secondary} 100%)`,
+        }}
       >
         {/* Decorative rings */}
         <div className="pointer-events-none absolute -top-32 -right-32 w-[420px] h-[420px] rounded-full border"
           style={{ borderColor: `${colors.primary}18` }} />
         <div className="pointer-events-none absolute -top-16 -right-16 w-[280px] h-[280px] rounded-full border"
           style={{ borderColor: `${colors.primary}0C` }} />
+        <div className="pointer-events-none absolute top-1/3 -left-20 w-[300px] h-[300px] rounded-full"
+          style={{ background: `radial-gradient(circle, #1e5a8040 0%, transparent 70%)` }} />
         <div className="pointer-events-none absolute -bottom-28 -left-28 w-[360px] h-[360px] rounded-full border"
           style={{ borderColor: `${colors.primary}0A` }} />
 
         {/* Logo */}
-        <div className="relative z-10">
+        <div className="relative z-10 mb-auto">
           <Image
             src="/alma_firma_consultora_logo.jpeg"
             alt="AlMa Firma Consultora"
-            width={56}
-            height={56}
-            className="rounded-lg"
+            width={88}
+            height={88}
+            className="rounded-xl"
           />
         </div>
 
@@ -103,29 +107,12 @@ export default function LoginPage() {
             Plataforma Contable
           </span>
           <h1 className="text-3xl lg:text-[2.6rem] font-bold text-white leading-tight tracking-tight mb-4">
-            Tu contabilidad,<br />
-            <span style={{ color: colors.primary }}>elevada.</span>
+            AlMa Digital: más simple,<br />
+            más ágil, <span style={{ color: colors.primary }}>en tiempo real.</span>
           </h1>
           <p className="text-sm leading-relaxed max-w-sm" style={{ color: 'rgba(255,255,255,0.48)' }}>
-            Un espacio unificado para firmas contables que automatizan flujos de trabajo y sirven a sus clientes con precisión.
+            Automatiza procesos contables manuales, ahorrá tiempo e invertilo en análisis, proyecciones y otras actividades de valor agregado.
           </p>
-        </div>
-
-        {/* Stats */}
-        <div
-          className="relative z-10 flex gap-8 pt-6"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.09)' }}
-        >
-          {[
-            { value: '98%', label: 'Satisfacción' },
-            { value: '3×', label: 'Más rápido' },
-            { value: 'ISO 27001', label: 'Certificado' },
-          ].map(({ value, label }) => (
-            <div key={label}>
-              <div className="text-lg font-bold text-white leading-tight">{value}</div>
-              <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.38)' }}>{label}</div>
-            </div>
-          ))}
         </div>
       </div>
 
@@ -142,10 +129,10 @@ export default function LoginPage() {
               className="text-2xl font-bold tracking-tight mb-2"
               style={{ color: colors.foreground }}
             >
-              Bienvenido de vuelta
+              Bienvenido
             </h2>
             <p className="text-sm" style={{ color: colors.mutedForeground }}>
-              Accedé a tu espacio AlMa de forma segura con código de un solo uso.
+              Accede a AlMa-digital de manera segura con un código de un solo uso (OTP).
             </p>
           </div>
 

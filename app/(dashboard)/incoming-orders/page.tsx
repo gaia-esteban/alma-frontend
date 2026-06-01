@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation, IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
 import { toast } from "sonner";
 import { Filter, FileSpreadsheet } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 import { DataTable } from "./data-table";
 import { createColumns } from "./columns";
 import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOrderDetailsModal";
@@ -87,14 +88,7 @@ export default function IncomingOrders() {
   return (
     <main className="w-full">
       <div className="w-full max-w-full">
-        <div className="flex items-center mb-4 md:mb-6">
-          <h1
-            className="text-lg md:text-xl lg:text-2xl font-semibold"
-            style={{ color: colors.foreground }}
-          >
-            Facturas de entrada
-          </h1>
-        </div>
+        <PageHeader title="Facturas de entrada" />
 
         {/* Filter Control Bar */}
         <TooltipProvider>

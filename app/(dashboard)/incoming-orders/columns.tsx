@@ -48,14 +48,18 @@ export const createColumns = (
     header: "NIT",
   },
   {
-    accessorKey: "costCenter",
-    header: "Centro de Costos",
-  },
-  {
     accessorKey: "issuanceDate",
-    header: "Fecha",
+    header: "Fecha factura",
     cell: ({ row }) => {
       const date = new Date(row.getValue("issuanceDate"));
+      return date.toLocaleDateString();
+    },
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Fecha de carga",
+    cell: ({ row }) => {
+      const date = new Date(row.getValue("createdAt"));
       return date.toLocaleDateString();
     },
   },

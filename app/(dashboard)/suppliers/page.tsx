@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { colors } from '@/lib/colors';
 import { Plus, Pencil, Search, AlertCircle } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 50;
 
 export default function SuppliersPage() {
   const { isHydrated } = useAuth();
@@ -66,21 +67,15 @@ export default function SuppliersPage() {
   return (
     <main className="w-full">
 
-      {/* Page header */}
-      <div className="flex items-start justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.foreground }}>
-            Proveedores
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: colors.mutedForeground }}>
-            Administrá el listado de proveedores de tu empresa
-          </p>
-        </div>
-        <Button onClick={openCreate} className="shrink-0">
-          <Plus className="h-4 w-4 mr-1.5" />
-          Nuevo proveedor
-        </Button>
-      </div>
+      <PageHeader
+        title="Proveedores"
+        action={
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Nuevo proveedor
+          </Button>
+        }
+      />
 
       {/* Filter bar */}
       <div
