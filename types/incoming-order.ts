@@ -2,6 +2,8 @@
 
 import { IncomingOrderDetail } from './incoming-order-detail';
 
+export type IncomingOrderStatus = 'Pendiente' | 'Procesada' | 'Fallida';
+
 export interface IncomingOrder {
   id: number;
   number: string;
@@ -15,6 +17,7 @@ export interface IncomingOrder {
   supplier: Record<string, unknown>;
   accountingNumber: string;
   costCenter: string;
+  status?: IncomingOrderStatus;
   createdAt: string;
   updatedAt: string;
   details?: IncomingOrderDetail[];

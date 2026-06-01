@@ -1,10 +1,16 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { IncomingOrder } from "@/types/incoming-order";
+import { IncomingOrder, IncomingOrderStatus } from "@/types/incoming-order";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileText } from "lucide-react";
+
+const STATUS_STYLES: Record<IncomingOrderStatus, { bg: string; color: string }> = {
+  Pendiente: { bg: '#EAECF0', color: '#6B7E8E' },
+  Procesada: { bg: '#D1FAF0', color: '#0A8C69' },
+  Fallida:   { bg: '#FEE2E2', color: '#B91C1C' },
+};
 
 export const createColumns = (
   onDetailsClick: (order: IncomingOrder) => void
@@ -61,6 +67,22 @@ export const createColumns = (
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
       return date.toLocaleDateString();
+    },
+  },
+  {
+    accessorKey: "status",
+    header: "Estado",
+    cell: ({ row }) => {
+      const status = (row.getValue("status") as IncomingOrderStatus) ?? 'Pendiente';
+      const style = STATUS_STYLES[status] ?? STATUS_STYLES.Pendiente;
+      return (
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+          style={{ backgroundColor: style.bg, color: style.color }}
+        >
+          {status}
+        </span>
+      );
     },
   },
   {
