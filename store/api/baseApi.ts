@@ -6,6 +6,7 @@ export enum TagTypes {
   PurchaseOrder = "PurchaseOrder",
   Vendor = "Vendor",
   User = "User",
+  Supplier = "Supplier",
 }
 
 const baseQuery = fetchBaseQuery({

@@ -10,6 +10,7 @@ interface UserData {
   displayName?: string;
   photoURL?: string;
   providerId?: string;
+  companyId?: number;
 }
 
 interface AuthSession {

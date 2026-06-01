@@ -16,6 +16,7 @@ export interface IncomingOrdersQueryParams {
   offset?: number;
   limit?: number;
   orderBy?: string;
+  order?: string;
   populate?: boolean;
 }
 
@@ -37,8 +38,9 @@ export const incomingOrdersApi = api.injectEndpoints({
         method: "GET",
         params: {
           offset: 0,
-          limit: 100,
+          limit: 50,
           orderBy: "created_at",
+          order: "DESC",
           populate: false,
           ...params,
         },

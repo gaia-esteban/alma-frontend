@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlMa Consulting — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:        #E8A020;
+      --gold-light:  #F5C96D;
+      --gold-dark:   #C4820A;
+      --navy:        #172C3B;
+      --navy-mid:    #243B50;
+      --navy-light:  #2F4D65;
+      --bg:          #F7F8FA;
+      --surface:     #FFFFFF;
+      --text:        #172C3B;
+      --text-muted:  #6B7E8E;
+      --border:      #D4DCE4;
+      --success:     #0CE4AC;
+      --font:        'Plus Jakarta Sans', sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Layout ─────────────────────────────── */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+
+    /* ─── Brand Panel (left) ─────────────────── */
+    .brand-panel {
+      position: relative;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 56px;
+      overflow: hidden;
+    }
+
+    /* Geometric decorations */
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      top: -120px;
+      right: -120px;
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      border: 1px solid rgba(232, 160, 32, 0.12);
+    }
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      border: 1px solid rgba(232, 160, 32, 0.08);
+    }
+
+    .brand-deco-bottom {
+      position: absolute;
+      bottom: -80px;
+      left: -80px;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      border: 1px solid rgba(232, 160, 32, 0.07);
+    }
+    .brand-deco-bottom-2 {
+      position: absolute;
+      bottom: -140px;
+      left: -140px;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      border: 1px solid rgba(232, 160, 32, 0.05);
+    }
+
+    /* Gold diagonal strip */
+    .brand-strip {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(
+        135deg,
+        transparent 0%,
+        transparent 62%,
+        rgba(232, 160, 32, 0.04) 62%,
+        rgba(232, 160, 32, 0.04) 100%
+      );
+    }
+
+    .brand-top {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+
+    .brand-center {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .brand-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 24px;
+    }
+
+    .brand-eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .brand-headline {
+      font-size: clamp(32px, 3.2vw, 44px);
+      font-weight: 700;
+      color: #FFFFFF;
+      line-height: 1.15;
+      letter-spacing: -1.2px;
+      margin-bottom: 20px;
+    }
+
+    .brand-headline em {
+      font-style: normal;
+      color: var(--gold);
+    }
+
+    .brand-sub {
+      font-size: 15px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.65;
+      max-width: 360px;
+    }
+
+    .brand-stats {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 40px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.3px;
+    }
+
+    /* ─── Form Panel (right) ─────────────────── */
+    .form-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 56px;
+      background: var(--surface);
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .form-header {
+      margin-bottom: 40px;
+    }
+
+    .form-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.6px;
+      margin-bottom: 8px;
+    }
+
+    .form-subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Steps indicator */
+    .steps {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 40px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .step-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg);
+      transition: all 0.2s;
+    }
+
+    .step.active .step-dot {
+      border-color: var(--gold);
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .step.active {
+      color: var(--text);
+    }
+
+    .step.done .step-dot {
+      border-color: var(--success);
+      background: var(--success);
+      color: var(--navy);
+    }
+
+    .step-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      margin: 0 10px;
+    }
+
+    /* Form fields */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.1px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+    }
+
+    .input-wrap input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px 0 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-wrap input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(232, 160, 32, 0.12);
+      background: #fff;
+    }
+
+    .input-wrap input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* OTP inputs */
+    .otp-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .otp-input {
+      flex: 1;
+      height: 56px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--font);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      text-align: center;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      letter-spacing: 0;
+    }
+
+    .otp-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(232, 160, 32, 0.12);
+      background: #fff;
+    }
+
+    .otp-input.filled {
+      border-color: var(--gold);
+      background: #fff;
+      color: var(--navy);
+    }
+
+    /* Button */
+    .btn-primary {
+      width: 100%;
+      height: 50px;
+      background: var(--gold);
+      border: none;
+      border-radius: 10px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      box-shadow: 0 4px 14px rgba(232, 160, 32, 0.35);
+      margin-top: 8px;
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-dark);
+      box-shadow: 0 6px 20px rgba(232, 160, 32, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Helper text */
+    .field-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .resend-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+    }
+
+    .resend-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gold);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font);
+      padding: 0;
+      text-decoration: none;
+    }
+
+    .timer {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 32px 0;
+    }
+
+    /* Tab switcher — Step 1 / Step 2 preview */
+    .tab-bar {
+      display: flex;
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 36px;
+    }
+
+    .tab {
+      flex: 1;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 1px 4px rgba(23, 44, 59, 0.10);
+    }
+
+    /* State panels */
+    .state { display: none; }
+    .state.visible { display: block; }
+
+    /* Footer link */
+    .form-footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .form-footer a {
+      color: var(--gold);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .brand-panel {
+        min-height: 260px;
+        padding: 36px 32px;
+      }
+      .brand-center { justify-content: flex-end; padding-bottom: 0; }
+      .brand-stats { flex-direction: row; flex-wrap: wrap; gap: 24px; }
+      .form-panel { padding: 48px 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ── Brand panel ── -->
+  <div class="brand-panel">
+    <div class="brand-strip"></div>
+    <div class="brand-deco-bottom"></div>
+    <div class="brand-deco-bottom-2"></div>
+
+    <div class="brand-top">
+      <div class="logo-mark">
+        <img src="../public/alma_firma_consultora_logo.jpeg" alt="AlMa Firma Consultora" style="height:56px;width:auto;border-radius:8px;" />
+      </div>
+    </div>
+
+    <div class="brand-center">
+      <span class="brand-eyebrow">Consulting Platform</span>
+      <h1 class="brand-headline">
+        Your accounting,<br />
+        <em>elevated.</em>
+      </h1>
+      <p class="brand-sub">
+        A unified workspace for accounting firms to manage operations, automate workflows, and serve clients with precision.
+      </p>
+    </div>
+
+    <div class="brand-stats">
+      <div class="stat-item">
+        <span class="stat-value">98%</span>
+        <span class="stat-label">Client satisfaction</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">3× faster</span>
+        <span class="stat-label">Invoice processing</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">ISO 27001</span>
+        <span class="stat-label">Certified security</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Form panel ── -->
+  <div class="form-panel">
+    <div class="form-container">
+
+      <div class="form-header">
+        <h2 class="form-title">Welcome back</h2>
+        <p class="form-subtitle">Sign in to your AlMa workspace securely via one-time code.</p>
+      </div>
+
+      <!-- Step toggle (prototype only) -->
+      <div class="tab-bar">
+        <button class="tab active" onclick="showStep(1, this)">① Email</button>
+        <button class="tab" onclick="showStep(2, this)">② Verify code</button>
+      </div>
+
+      <!-- Step 1 — Email -->
+      <div class="state visible" id="step1">
+        <div class="field">
+          <label for="email">Email address</label>
+          <div class="input-wrap">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+              <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+            </svg>
+            <input id="email" type="email" placeholder="you@company.com" value="esteban@andantelabs.com" />
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="showStep(2, document.querySelectorAll('.tab')[1])">
+          Send verification code
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <p class="form-footer" style="margin-top:24px;">
+          We'll send a 6-digit code to your email.<br/>
+          No password needed.
+        </p>
+      </div>
+
+      <!-- Step 2 — OTP -->
+      <div class="state" id="step2">
+        <div class="field">
+          <label>Verification code</label>
+          <p class="field-hint" style="margin-bottom:12px;">Sent to esteban@andantelabs.com</p>
+          <div class="otp-row">
+            <input class="otp-input filled" type="text" maxlength="1" value="4" />
+            <input class="otp-input filled" type="text" maxlength="1" value="8" />
+            <input class="otp-input filled" type="text" maxlength="1" value="2" />
+            <input class="otp-input" type="text" maxlength="1" placeholder="·" />
+            <input class="otp-input" type="text" maxlength="1" placeholder="·" />
+            <input class="otp-input" type="text" maxlength="1" placeholder="·" />
+          </div>
+        </div>
+
+        <button class="btn-primary">
+          Verify & sign in
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <div class="resend-row">
+          <button class="resend-link">← Change email</button>
+          <span class="timer">Resend in 0:42</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function showStep(n, tabEl) {
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('step' + n).classList.add('visible');
+    tabEl.classList.add('active');
+  }
+</script>
+</body>
+</html>

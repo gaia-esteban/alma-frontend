@@ -119,17 +119,7 @@ export function DataTable<TData, TValue>({
                           className="h-8 text-xs"
                         />
                       )}
-                      {canFilter && columnId === "costCenter" && (
-                        <Input
-                          placeholder="Filter status..."
-                          value={(header.column.getFilterValue() as string) ?? ""}
-                          onChange={(event) =>
-                            header.column.setFilterValue(event.target.value)
-                          }
-                          className="h-8 text-xs"
-                        />
-                      )}
-                      {canFilter && columnId === "issuanceDate" && (
+                      {canFilter && (columnId === "issuanceDate" || columnId === "createdAt") && (
                         <Input
                           type="date"
                           value={(header.column.getFilterValue() as string) ?? ""}

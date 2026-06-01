@@ -1,33 +1,35 @@
 import { colors } from '@/lib/colors';
 import { cn } from '@/lib/utils';
-import { ButtonProps, Variant } from '@/types/ui';
+import { ButtonProps } from '@/types/ui';
 
+const sizeClasses: Record<string, string> = {
+  default: 'h-10 px-4 py-2 text-sm',
+  sm:      'h-8 px-3 text-xs',
+  lg:      'h-12 px-6 text-base',
+  icon:    'h-9 w-9 p-0',
+};
 
 export function Button({
   children,
   variant = 'default',
+  size = 'default',
   className,
   disabled,
   onClick,
   ...props
 }: ButtonProps) {
 
-  const getButtonStyles = () => {
-    const baseClasses =
-      'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer h-12 px-4 py-2';
-
-    const styles: Record<Variant, {
-      backgroundColor: string;
-      color: string;
-      borderColor: string;
-    }> = {
+  const getStyles = () => {
+    type StyleMap = { backgroundColor: string; color: string; borderColor: string; boxShadow?: string };
+    const map: Record<string, StyleMap> = {
       default: {
         backgroundColor: colors.primary,
         color: colors.primaryForeground,
         borderColor: 'transparent',
+        boxShadow: '0 2px 10px rgba(232,160,32,0.28)',
       },
       outline: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.surface ?? colors.input,
         color: colors.secondary,
         borderColor: colors.border,
       },
@@ -42,39 +44,45 @@ export function Button({
         borderColor: 'transparent',
       },
     };
-
-    return { baseClasses, ...styles[variant] };
+    return map[variant] ?? map.default;
   };
 
-  const buttonStyles = getButtonStyles();
+  const styles = getStyles();
+  const sizeClass = sizeClasses[size] ?? sizeClasses.default;
 
   return (
     <button
-      className={cn(buttonStyles.baseClasses, 'border', className)}
+      className={cn(
+        'inline-flex items-center justify-center rounded-md font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'disabled:pointer-events-none disabled:opacity-50 cursor-pointer border',
+        sizeClass,
+        className
+      )}
       style={{
-        backgroundColor: buttonStyles.backgroundColor,
-        color: buttonStyles.color,
-        borderColor: buttonStyles.borderColor,
-        '--tw-ring-color': colors.ring
-      } as React.CSSProperties}
+        backgroundColor: styles.backgroundColor,
+        color: styles.color,
+        borderColor: styles.borderColor,
+        boxShadow: styles.boxShadow,
+        ['--tw-ring-color' as string]: colors.ring,
+      }}
       disabled={disabled}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        const target = e.target as HTMLButtonElement;
-        if (!disabled && variant === 'default') {
-          target.style.backgroundColor = `${colors.primary}E6`; // 90% opacity
-        } else if (!disabled && variant === 'outline') {
-          target.style.backgroundColor = colors.muted;
-        } else if (!disabled && variant === 'ghost') {
-          target.style.backgroundColor = colors.muted;
+      onMouseEnter={e => {
+        if (disabled) return;
+        const el = e.currentTarget;
+        if (variant === 'default') {
+          el.style.backgroundColor = colors.primaryDark ?? colors.primary;
+          el.style.boxShadow = '0 4px 16px rgba(232,160,32,0.38)';
+        } else if (variant === 'outline' || variant === 'ghost') {
+          el.style.backgroundColor = colors.muted;
         }
       }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          const styles = getButtonStyles();
-          const target = e.target as HTMLButtonElement;
-          target.style.backgroundColor = styles.backgroundColor;
-        }
+      onMouseLeave={e => {
+        if (disabled) return;
+        const el = e.currentTarget;
+        el.style.backgroundColor = styles.backgroundColor;
+        el.style.boxShadow = styles.boxShadow ?? '';
       }}
       {...props}
     >

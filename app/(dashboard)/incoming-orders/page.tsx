@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation, IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
 import { toast } from "sonner";
-import { Filter, FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, Search } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
 import { DataTable } from "./data-table";
 import { createColumns } from "./columns";
 import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOrderDetailsModal";
-import { IncomingOrder } from "@/types/incoming-order";
+import { IncomingOrder, IncomingOrderStatus } from "@/types/incoming-order";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,20 +18,50 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { colors } from "@/lib/colors";
+
+type StatusFilter = 'all' | IncomingOrderStatus;
+
+const STATUS_TABS: { key: StatusFilter; label: string }[] = [
+  { key: 'all',        label: 'Todos' },
+  { key: 'Pendiente',  label: 'Pendiente' },
+  { key: 'Procesada',  label: 'Procesada' },
+  { key: 'Fallida',    label: 'Fallida' },
+];
 
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrderByIdResponse | null>(null);
-  const [showFilters, setShowFilters] = useState(true);
   const [selectedRows, setSelectedRows] = useState<IncomingOrder[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [search, setSearch] = useState('');
 
   const { data, isLoading, error } = useGetIncomingOrdersQuery({}, {
-    skip: !isHydrated, // Skip query until auth is hydrated
+    skip: !isHydrated,
   });
   const [triggerGetOrderById] = useLazyGetIncomingOrderByIdQuery();
   const [exportIncomingOrders, { isLoading: isExporting }] = useExportIncomingOrdersMutation();
+
+  const orders = useMemo(() => data?.data ?? [], [data?.data]);
+
+  const filtered = useMemo(() => {
+    let list = orders;
+    if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(o =>
+        o.number.toLowerCase().includes(q) ||
+        (o.supplier as { name?: string })?.name?.toLowerCase().includes(q) ||
+        o.supplierId.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [orders, statusFilter, search]);
+
+  const countFor = (key: StatusFilter) =>
+    key === 'all' ? orders.length : orders.filter(o => o.status === key).length;
 
   const handleDetailsClick = async (order: IncomingOrder) => {
     // Store the clicked row data
@@ -72,11 +103,10 @@ export default function IncomingOrders() {
 
   const columns = createColumns(handleDetailsClick);
 
-  // Show loading state while checking localStorage
   if (!isHydrated) {
     return (
       <main className="w-full">
-        <div className="text-center py-8 text-gray-600">
+        <div className="text-center py-8" style={{ color: colors.mutedForeground }}>
           Cargando...
         </div>
       </main>
@@ -86,34 +116,58 @@ export default function IncomingOrders() {
   return (
     <main className="w-full">
       <div className="w-full max-w-full">
-        <div className="flex items-center mb-4 md:mb-6">
-          <h1 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-800">
-            Facturas de entrada
-          </h1>
-        </div>
+        <PageHeader title="Facturas de entrada" />
 
-        {/* Filter Control Bar */}
+        {/* Filter bar */}
         <TooltipProvider>
-          <div className="mb-4 p-3 border border-gray-300 rounded-lg flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`${
-                  showFilters ? "text-blue-600" : "text-gray-600"
-                }`}
-              >
-                <Filter className={`w-4 h-4 ${showFilters ? "text-blue-600" : "text-gray-600"}`} />
-              </Button>
+          <div
+            className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 p-3 rounded-lg"
+            style={{ border: `1px solid ${colors.border}`, backgroundColor: colors.surface ?? '#fff' }}
+          >
+            {/* Status tabs */}
+            <div
+              className="flex rounded-lg p-1 gap-0.5 shrink-0"
+              style={{ backgroundColor: colors.muted }}
+            >
+              {STATUS_TABS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setStatusFilter(key)}
+                  className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-semibold transition-colors"
+                  style={{
+                    backgroundColor: statusFilter === key ? colors.secondary : 'transparent',
+                    color: statusFilter === key ? '#fff' : colors.mutedForeground,
+                  }}
+                >
+                  {label}
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: statusFilter === key ? 'rgba(255,255,255,0.15)' : colors.border,
+                      color: statusFilter === key ? '#fff' : colors.mutedForeground,
+                    }}
+                  >
+                    {countFor(key)}
+                  </span>
+                </button>
+              ))}
+            </div>
 
+            {/* Search */}
+            <div className="relative flex-1 w-full sm:w-auto">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
+                style={{ color: colors.mutedForeground }}
+              />
               <Input
-                type="text"
-                placeholder="Buscar facturas de entrada..."
-                className="max-w-sm"
+                placeholder="Buscar por # factura, tercero o NIT…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-8 h-9 text-sm"
               />
             </div>
 
+            {/* Export */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -135,20 +189,20 @@ export default function IncomingOrders() {
         {/* Data Table */}
         <div className="w-full">
           {isLoading && (
-            <div className="text-center py-8 text-gray-600">
+            <div className="text-center py-8" style={{ color: colors.mutedForeground }}>
               Cargando...
             </div>
           )}
           {error && (
-            <div className="text-center py-8 text-red-600">
+            <div className="text-center py-8" style={{ color: colors.destructive }}>
               Error al cargar las ordenes.
             </div>
           )}
           {!isLoading && !error && (
             <DataTable
               columns={columns}
-              data={data?.data || []}
-              showFilters={showFilters}
+              data={filtered}
+              showFilters={false}
               onRowSelectionChange={handleRowSelectionChange}
             />
           )}
