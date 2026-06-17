@@ -13,7 +13,7 @@ export default function DashboardLayout({
         className="sticky top-0 z-50 w-full"
         style={{ backgroundColor: colors.secondary, borderBottom: `1px solid rgba(255,255,255,0.07)` }}
       >
-        <div className="container flex h-16 items-center px-4 gap-3">
+        <div className="w-full max-w-screen-2xl mx-auto flex h-16 items-center px-6 gap-3">
           <HamburgerMenu />
           <Image
             src="/alma_firma_consultora_logo.jpeg"
@@ -27,7 +27,7 @@ export default function DashboardLayout({
           </span>
         </div>
       </header>
-      <main className="container py-4 px-4 md:py-6 md:px-6">
+      <main className="w-full max-w-screen-2xl mx-auto py-4 px-6 md:py-6">
         {children}
       </main>
     </div>
