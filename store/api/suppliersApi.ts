@@ -13,7 +13,7 @@ export interface SupplierSingleResponse {
 }
 
 export interface SuppliersQueryParams {
-  company_id?: number;
+  companyId?: string;
   is_active?: boolean;
   identification?: string;
   page?: number;
@@ -21,7 +21,7 @@ export interface SuppliersQueryParams {
 }
 
 export interface SupplierCreateBody {
-  company_id: number;
+  companyId: number;
   identification: string;
   description?: string;
   debit_account?: string;
@@ -34,7 +34,7 @@ export interface SupplierCreateBody {
   is_active?: boolean;
 }
 
-export type SupplierUpdateBody = Partial<Omit<SupplierCreateBody, 'company_id'>>;
+export type SupplierUpdateBody = Partial<Omit<SupplierCreateBody, 'companyId'>>;
 
 export const suppliersApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -47,12 +47,13 @@ export const suppliersApi = api.injectEndpoints({
       providesTags: [TagTypes.Supplier],
     }),
 
-    getSupplierById: builder.query<SupplierSingleResponse, number>({
-      query: (id) => ({
+    getSupplierById: builder.query<SupplierSingleResponse, { id: number; companyId: string }>({
+      query: ({ id, companyId }) => ({
         url: `/suppliers/${id}`,
         method: 'GET',
+        params: { companyId },
       }),
-      providesTags: (result, error, id) => [{ type: TagTypes.Supplier, id }],
+      providesTags: (result, error, { id }) => [{ type: TagTypes.Supplier, id }],
     }),
 
     createSupplier: builder.mutation<SupplierSingleResponse, SupplierCreateBody>({
@@ -64,11 +65,11 @@ export const suppliersApi = api.injectEndpoints({
       invalidatesTags: [TagTypes.Supplier],
     }),
 
-    updateSupplier: builder.mutation<SupplierSingleResponse, { id: number; data: SupplierUpdateBody }>({
-      query: ({ id, data }) => ({
+    updateSupplier: builder.mutation<SupplierSingleResponse, { id: number; companyId: number; data: SupplierUpdateBody }>({
+      query: ({ id, companyId, data }) => ({
         url: `/suppliers/${id}`,
         method: 'PATCH',
-        body: data,
+        body: { ...data, companyId },
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: TagTypes.Supplier, id },

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useGetSuppliersQuery } from '@/store/api/suppliersApi';
+import { useGetCompaniesQuery } from '@/store/api/companiesApi';
 import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import { Supplier } from '@/types/supplier';
@@ -10,15 +11,44 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { colors } from '@/lib/colors';
-import { Plus, Pencil, Search, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Search, AlertCircle, Building2 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 
 const PAGE_SIZE = 50;
 
 export default function SuppliersPage() {
   const { isHydrated } = useAuth();
-  const companyId = useAppSelector(state => state.auth.user?.companyId);
+  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
+
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 }, { skip: !isHydrated });
+  const companies = useMemo(() => companiesData?.data ?? [], [companiesData?.data]);
+
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[] | null>(null);
+
+  // Default to all accessible companies selected once the companies list loads
+  useEffect(() => {
+    if (companies.length && selectedCompanyIds === null) {
+      setSelectedCompanyIds(companies.map(c => String(c.id)));
+    }
+  }, [companies, selectedCompanyIds]);
+
+  const toggleCompany = (id: string) => {
+    setSelectedCompanyIds(prev => {
+      const current = prev ?? companies.map(c => String(c.id));
+      return current.includes(id) ? current.filter(c => c !== id) : [...current, id];
+    });
+  };
+
+  const companyId = (selectedCompanyIds ?? companyAccess ?? []).join(',');
 
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -28,12 +58,14 @@ export default function SuppliersPage() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
   const { data, isLoading, error } = useGetSuppliersQuery(
-    { company_id: companyId, page, limit: PAGE_SIZE },
+    { companyId, page, limit: PAGE_SIZE },
     { skip: !isHydrated || !companyId }
   );
 
-  const suppliers = useMemo(() => data?.data ?? [], [data?.data]);
-  const total = data?.total ?? 0;
+  const noCompanySelected = selectedCompanyIds !== null && selectedCompanyIds.length === 0;
+
+  const suppliers = useMemo(() => (noCompanySelected ? [] : data?.data ?? []), [data?.data, noCompanySelected]);
+  const total = noCompanySelected ? 0 : data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const filtered = useMemo(() => {
@@ -128,6 +160,38 @@ export default function SuppliersPage() {
             className="pl-8 h-9 text-sm"
           />
         </div>
+
+        {/* Company filter */}
+        {companies.length > 1 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
+                <Building2 className="h-3.5 w-3.5" />
+                Compañías
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: colors.muted, color: colors.mutedForeground }}
+                >
+                  {(selectedCompanyIds ?? companies.map(c => String(c.id))).length}/{companies.length}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuLabel>Filtrar por compañía</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {companies.map(company => (
+                <DropdownMenuCheckboxItem
+                  key={company.id}
+                  checked={(selectedCompanyIds ?? []).includes(String(company.id))}
+                  onCheckedChange={() => toggleCompany(String(company.id))}
+                  onSelect={e => e.preventDefault()}
+                >
+                  {company.description}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* Table */}
@@ -138,7 +202,7 @@ export default function SuppliersPage() {
         <table className="w-full border-collapse">
           <thead>
             <tr style={{ backgroundColor: colors.background, borderBottom: `1px solid ${colors.border}` }}>
-              {['Identificación', 'Descripción', 'Cta. débito', 'Cta. crédito', 'Estado', ''].map(h => (
+              {['Identificación', 'Descripción', 'Compañía', 'Cta. débito', 'Cta. crédito', 'Estado', ''].map(h => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider last:text-right"
@@ -153,7 +217,7 @@ export default function SuppliersPage() {
             {isLoading && (
               Array.from({ length: PAGE_SIZE }).map((_, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                  {[1, 2, 3, 4, 5, 6].map(c => (
+                  {[1, 2, 3, 4, 5, 6, 7].map(c => (
                     <td key={c} className="px-4 py-3">
                       <Skeleton className="h-4 w-full" />
                     </td>
@@ -164,7 +228,7 @@ export default function SuppliersPage() {
 
             {!isLoading && error && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center">
+                <td colSpan={7} className="px-4 py-10 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle className="h-5 w-5" style={{ color: colors.destructive }} />
                     <p className="text-sm" style={{ color: colors.destructive }}>
@@ -175,9 +239,19 @@ export default function SuppliersPage() {
               </tr>
             )}
 
-            {!isLoading && !error && filtered.length === 0 && (
+            {!isLoading && !error && noCompanySelected && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center">
+                <td colSpan={7} className="px-4 py-12 text-center">
+                  <p className="text-sm" style={{ color: colors.mutedForeground }}>
+                    Selecciona al menos una compañía para ver proveedores
+                  </p>
+                </td>
+              </tr>
+            )}
+
+            {!isLoading && !error && !noCompanySelected && filtered.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-12 text-center">
                   <p className="text-sm" style={{ color: colors.mutedForeground }}>
                     {search ? 'No se encontraron proveedores con ese criterio' : 'No hay proveedores registrados'}
                   </p>
@@ -212,6 +286,11 @@ export default function SuppliersPage() {
                 <td className="px-4 py-3">
                   <span className="text-sm" style={{ color: colors.mutedForeground }}>
                     {supplier.description || '—'}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm" style={{ color: colors.foreground }}>
+                    {supplier.company?.description || '—'}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -304,7 +383,7 @@ export default function SuppliersPage() {
         open={slideOverOpen}
         onOpenChange={setSlideOverOpen}
         supplier={selectedSupplier}
-        companyId={companyId ?? 0}
+        companyId={Number(companyAccess?.[0]) || 0}
       />
     </main>
   );

@@ -15,6 +15,7 @@ export interface IncomingOrder {
   currency: string;
   supplierId: string;
   supplier: Record<string, unknown>;
+  company: { id: number; description: string };
   accountingNumber: string;
   costCenter: string;
   status?: IncomingOrderStatus;

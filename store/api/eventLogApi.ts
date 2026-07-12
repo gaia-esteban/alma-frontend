@@ -7,6 +7,7 @@ export interface EventLogResponse {
 }
 
 export interface EventLogQueryParams {
+  companyId: string;
   entity?: 'INCOMING_ORDER' | 'APP' | 'SUPPLIER';
   eventName?: 'LOGGED_IN' | 'ACCOUNTING_FILE_CREATED' | 'SUPPLIER_UPDATED';
   userId?: number;
@@ -22,7 +23,7 @@ export interface EventLogQueryParams {
 export const eventLogApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getEventLog: builder.query<EventLogResponse, EventLogQueryParams>({
-      query: (params = {}) => ({
+      query: (params) => ({
         url: "/events-log",
         method: "GET",
         params: {

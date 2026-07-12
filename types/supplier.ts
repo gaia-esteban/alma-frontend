@@ -1,6 +1,7 @@
 export interface Supplier {
   id: number;
   company_id: number;
+  company?: { id: number; description: string };
   identification: string;
   description?: string;
   debit_account?: string;

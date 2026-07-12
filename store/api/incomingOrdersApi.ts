@@ -13,6 +13,7 @@ export interface IncomingOrderByIdResponse {
 }
 
 export interface IncomingOrdersQueryParams {
+  companyId: string;
   offset?: number;
   limit?: number;
   orderBy?: string;
@@ -20,9 +21,15 @@ export interface IncomingOrdersQueryParams {
   populate?: boolean;
 }
 
+export interface GetIncomingOrderByIdParams {
+  id: number;
+  companyId: string;
+}
+
 export interface ExportIncomingOrdersRequest {
   invoices: number[];
   consecutive: number;
+  companyId: number;
 }
 
 export interface ExportIncomingOrdersResponse {
@@ -33,7 +40,7 @@ export interface ExportIncomingOrdersResponse {
 export const incomingOrdersApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getIncomingOrders: builder.query<IncomingOrdersResponse, IncomingOrdersQueryParams>({
-      query: (params = {}) => ({
+      query: (params) => ({
         url: "/incoming-orders",
         method: "GET",
         params: {
@@ -46,10 +53,11 @@ export const incomingOrdersApi = api.injectEndpoints({
         },
       }),
     }),
-    getIncomingOrderById: builder.query<IncomingOrderByIdResponse, number>({
-      query: (id) => ({
+    getIncomingOrderById: builder.query<IncomingOrderByIdResponse, GetIncomingOrderByIdParams>({
+      query: ({ id, companyId }) => ({
         url: `/incoming-orders/${id}`,
         method: "GET",
+        params: { companyId },
       }),
     }),
     exportIncomingOrders: builder.mutation<ExportIncomingOrdersResponse, ExportIncomingOrdersRequest>({
