@@ -146,10 +146,10 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: P
 
     try {
       if (isEditing) {
-        await updateSupplier({ id: supplier!.id, data: payload as SupplierUpdateBody }).unwrap();
+        await updateSupplier({ id: supplier!.id, companyId, data: payload as SupplierUpdateBody }).unwrap();
         toast.success('Proveedor actualizado correctamente');
       } else {
-        await createSupplier({ ...payload, company_id: companyId } as SupplierCreateBody).unwrap();
+        await createSupplier({ ...payload, companyId } as SupplierCreateBody).unwrap();
         toast.success('Proveedor creado correctamente');
       }
       onOpenChange(false);

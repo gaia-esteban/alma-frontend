@@ -87,7 +87,7 @@ export function useAuth() {
         uid: apiResponse.data.user.id.toString(),
         email: apiResponse.data.user.email,
         displayName: apiResponse.data.user.name,
-        companyId: apiResponse.data.user.company_id,
+        companyAccess: apiResponse.data.user.company_access,
       },
       token: apiResponse.data.token,
     };

@@ -50,6 +50,11 @@ export const createColumns = (
     },
   },
   {
+    accessorKey: "company.description",
+    header: "Compañía",
+    cell: ({ row }) => row.original.company?.description || "-",
+  },
+  {
     accessorKey: "supplierId",
     header: "NIT",
   },

@@ -31,7 +31,7 @@ export interface AuthVerifyOTPResponse {
       active: boolean;
       status: string;
       otpkey: string;
-      company_id: number;
+      company_access: string[];
       createdAt: string;
       updatedAt: string;
     };

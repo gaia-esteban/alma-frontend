@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppSelector } from "@/store";
 import { colors } from "@/lib/colors";
 
 type StatusFilter = 'all' | IncomingOrderStatus;
@@ -31,6 +32,8 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
 
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
+  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
+  const companyId = companyAccess?.join(',');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrderByIdResponse | null>(null);
@@ -38,8 +41,8 @@ export default function IncomingOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, error } = useGetIncomingOrdersQuery({}, {
-    skip: !isHydrated,
+  const { data, isLoading, error } = useGetIncomingOrdersQuery({ companyId: companyId! }, {
+    skip: !isHydrated || !companyId,
   });
   const [triggerGetOrderById] = useLazyGetIncomingOrderByIdQuery();
   const [exportIncomingOrders, { isLoading: isExporting }] = useExportIncomingOrdersMutation();
@@ -69,7 +72,7 @@ export default function IncomingOrders() {
 
     try {
       // Fetch detailed data from API
-      const orderDetails = await triggerGetOrderById(order.id).unwrap();
+      const orderDetails = await triggerGetOrderById({ id: order.id, companyId: companyId! }).unwrap();
       setSelectedOrderDetails(orderDetails);
       setModalOpen(true);
     } catch (error) {
@@ -83,11 +86,18 @@ export default function IncomingOrders() {
       return;
     }
 
+    const distinctCompanyIds = Array.from(new Set(selectedRows.map(row => row.company?.id)));
+    if (distinctCompanyIds.length > 1) {
+      toast.error("No se pueden exportar facturas de más de una compañía a la vez");
+      return;
+    }
+
     try {
       const invoices = selectedRows.map(row => row.id);
       const result = await exportIncomingOrders({
         invoices,
-        consecutive: 611
+        consecutive: 611,
+        companyId: distinctCompanyIds[0],
       }).unwrap();
 
       toast.success(result.message || "Facturas exportadas exitosamente");

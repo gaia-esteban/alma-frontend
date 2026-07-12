@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useGetIncomingOrdersQuery } from '@/store/api/incomingOrdersApi';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppSelector } from '@/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSelector } from '@/components/dashboard/TimelineSelector';
@@ -20,11 +21,13 @@ import { DollarSign, FileText, TrendingUp, Clock, AlertCircle, Calendar } from '
 
 export function FacturasTab() {
   const { isHydrated } = useAuth();
+  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
+  const companyId = companyAccess?.join(',');
   const [timeline, setTimeline] = useState<TimelineOption>('today');
 
   const { data, isLoading, error } = useGetIncomingOrdersQuery(
-    { populate: true, limit: 1000 },
-    { skip: !isHydrated },
+    { companyId: companyId!, populate: true, limit: 1000 },
+    { skip: !isHydrated || !companyId },
   );
 
   const timeRange = useMemo(() => getTimeRange(timeline), [timeline]);
