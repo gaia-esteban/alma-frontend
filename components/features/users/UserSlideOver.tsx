@@ -43,7 +43,7 @@ interface FormState {
   email: string;
   role: 'user' | 'admin';
   active: boolean;
-  companyIds: number[];
+  companyIds: string[];
 }
 
 const emptyForm: FormState = {
@@ -60,7 +60,7 @@ function userToForm(u: AdminUser): FormState {
     email: u.email ?? '',
     role: u.role ?? 'user',
     active: u.active ?? true,
-    companyIds: (u.company_access ?? []).map(Number),
+    companyIds: (u.company_access ?? []).map(String),
   };
 }
 
@@ -116,7 +116,7 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const toggleCompany = (id: number) => {
+  const toggleCompany = (id: string) => {
     setForm(prev => ({
       ...prev,
       companyIds: prev.companyIds.includes(id)
@@ -132,7 +132,7 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
     if (form.name.trim().length > 0 && form.name.trim().length < 3) next.name = 'Mínimo 3 caracteres';
     if (form.name.length > 50) next.name = 'Máximo 50 caracteres';
     if (!form.email.trim()) next.email = 'El email es requerido';
-    if (form.companyIds.length === 0) next.companyIds = 'Seleccioná al menos una compañía';
+    if (form.companyIds.length === 0) next.companyIds = 'Selecciona al menos una compañía';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -171,7 +171,7 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
   };
 
   const selectedCompanyNames = companies
-    .filter(c => form.companyIds.includes(c.id))
+    .filter(c => form.companyIds.includes(String(c.id)))
     .map(c => c.description);
 
   return (
@@ -194,7 +194,7 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
           <SheetDescription className="text-xs" style={{ color: colors.mutedForeground }}>
             {isEditing
               ? `Modificando ${user!.email}`
-              : 'Completá los datos para registrar un nuevo usuario'}
+              : 'Completa los datos para registrar un nuevo usuario'}
           </SheetDescription>
         </SheetHeader>
 
@@ -268,7 +268,7 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
                       <span className="truncate text-left">
                         {selectedCompanyNames.length > 0
                           ? selectedCompanyNames.join(', ')
-                          : 'Seleccioná una o más compañías'}
+                          : 'Selecciona una o más compañías'}
                       </span>
                       <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
                     </Button>
@@ -279,8 +279,8 @@ export function UserSlideOver({ open, onOpenChange, user, companies }: Props) {
                     {companies.map(company => (
                       <DropdownMenuCheckboxItem
                         key={company.id}
-                        checked={form.companyIds.includes(company.id)}
-                        onCheckedChange={() => toggleCompany(company.id)}
+                        checked={form.companyIds.includes(String(company.id))}
+                        onCheckedChange={() => toggleCompany(String(company.id))}
                         onSelect={e => e.preventDefault()}
                       >
                         {company.description}

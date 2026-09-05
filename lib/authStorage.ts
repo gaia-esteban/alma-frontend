@@ -11,6 +11,7 @@ interface UserData {
   photoURL?: string;
   providerId?: string;
   companyAccess: string[];
+  role?: string;
 }
 
 interface AuthSession {

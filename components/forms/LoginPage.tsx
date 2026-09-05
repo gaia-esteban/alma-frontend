@@ -223,7 +223,7 @@ export default function LoginPage() {
           <DialogHeader>
             <DialogTitle>Verificación requerida</DialogTitle>
             <DialogDescription>
-              Ingresá el código de 6 dígitos enviado a {email || 'tu correo'}
+              Ingresa el código de 6 dígitos enviado a {email || 'tu correo'}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center space-y-5 py-4">

@@ -80,7 +80,7 @@ export default function UsersPage() {
 
   const handleDelete = async (u: AdminUser) => {
     if (String(u.id) === String(currentUser?.uid)) {
-      toast.error('No podés eliminar tu propia cuenta');
+      toast.error('No puedes eliminar tu propia cuenta');
       return;
     }
     if (!window.confirm(`¿Eliminar al usuario ${u.name} (${u.email})? Esta acción no se puede deshacer.`)) {
