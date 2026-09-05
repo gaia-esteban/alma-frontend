@@ -88,6 +88,7 @@ export function useAuth() {
         email: apiResponse.data.user.email,
         displayName: apiResponse.data.user.name,
         companyAccess: apiResponse.data.user.company_access,
+        role: apiResponse.data.user.role,
       },
       token: apiResponse.data.token,
     };

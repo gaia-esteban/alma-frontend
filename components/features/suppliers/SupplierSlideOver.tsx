@@ -12,6 +12,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { colors } from '@/lib/colors';
@@ -24,6 +31,7 @@ import {
 } from '@/store/api/suppliersApi';
 
 interface FormState {
+  companyId: number | null;
   identification: string;
   description: string;
   debit_account: string;
@@ -37,6 +45,7 @@ interface FormState {
 }
 
 const emptyForm: FormState = {
+  companyId: null,
   identification: '',
   description: '',
   debit_account: '',
@@ -51,6 +60,7 @@ const emptyForm: FormState = {
 
 function supplierToForm(s: Supplier): FormState {
   return {
+    companyId: s.company_id ?? null,
     identification: s.identification ?? '',
     description: s.description ?? '',
     debit_account: s.debit_account ?? '',
@@ -68,7 +78,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplier: Supplier | null;
-  companyId: number;
+  companies: { id: number; description: string }[];
 }
 
 interface FieldLabelProps {
@@ -95,7 +105,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: Props) {
+export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: Props) {
   const isEditing = !!supplier;
   const [form, setForm] = useState<FormState>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -111,13 +121,14 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: P
     }
   }, [open, supplier]);
 
-  const set = (field: keyof FormState, value: string | boolean) => {
+  const set = (field: keyof FormState, value: string | boolean | number | null) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
   const validate = (): boolean => {
     const next: typeof errors = {};
+    if (!form.companyId) next.companyId = 'La compañía es requerida';
     if (!form.identification.trim()) next.identification = 'La identificación es requerida';
     if (form.identification.length > 100) next.identification = 'Máximo 100 caracteres';
     if (form.description.length > 250) next.description = 'Máximo 250 caracteres';
@@ -132,6 +143,7 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: P
     if (!validate()) return;
 
     const payload = {
+      companyId: form.companyId as number,
       identification: form.identification.trim(),
       description: form.description.trim() || undefined,
       debit_account: form.debit_account.trim() || undefined,
@@ -146,10 +158,10 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: P
 
     try {
       if (isEditing) {
-        await updateSupplier({ id: supplier!.id, companyId, data: payload as SupplierUpdateBody }).unwrap();
+        await updateSupplier({ id: supplier!.id, companyId: supplier!.company_id, data: payload as SupplierUpdateBody }).unwrap();
         toast.success('Proveedor actualizado correctamente');
       } else {
-        await createSupplier({ ...payload, companyId } as SupplierCreateBody).unwrap();
+        await createSupplier(payload as SupplierCreateBody).unwrap();
         toast.success('Proveedor creado correctamente');
       }
       onOpenChange(false);
@@ -190,6 +202,28 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companyId }: P
           <div>
             <SectionTitle>Identificación</SectionTitle>
             <div className="space-y-4">
+              <div>
+                <FieldLabel label="Compañía" required />
+                <Select
+                  value={form.companyId ? String(form.companyId) : undefined}
+                  onValueChange={val => set('companyId', Number(val))}
+                  disabled={isEditing}
+                >
+                  <SelectTrigger className="w-full" aria-invalid={!!errors.companyId}>
+                    <SelectValue placeholder="Seleccioná una compañía" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map(company => (
+                      <SelectItem key={company.id} value={String(company.id)}>
+                        {company.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.companyId && (
+                  <p className="text-xs mt-1" style={{ color: colors.destructive }}>{errors.companyId}</p>
+                )}
+              </div>
               <div>
                 <FieldLabel label="Identificación" required hint="máx. 100 caracteres" />
                 <Input

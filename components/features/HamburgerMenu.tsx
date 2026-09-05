@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, FileText, LogOut, Users } from 'lucide-react';
+import { Menu, Home, FileText, LogOut, Users, UserCog } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { colors } from '@/lib/colors';
 import Image from 'next/image';
@@ -11,14 +11,15 @@ import Image from 'next/image';
 const navSections = [
   {
     items: [
-      { label: 'Inicio', href: '/home', icon: Home },
-      { label: 'Facturas de entrada', href: '/incoming-orders', icon: FileText },
+      { label: 'Inicio', href: '/home', icon: Home, adminOnly: false },
+      { label: 'Facturas de entrada', href: '/incoming-orders', icon: FileText, adminOnly: false },
     ],
   },
   {
     label: 'Maestros',
     items: [
-      { label: 'Proveedores', href: '/suppliers', icon: Users },
+      { label: 'Proveedores', href: '/suppliers', icon: Users, adminOnly: false },
+      { label: 'Usuarios', href: '/users', icon: UserCog, adminOnly: true },
     ],
   },
 ];
@@ -28,6 +29,7 @@ export function HamburgerMenu() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [open, setOpen] = React.useState(false);
+  const isAdmin = user?.role === 'admin';
 
   const handleNavigation = (path: string) => {
     router.push(path);
@@ -92,7 +94,9 @@ export function HamburgerMenu() {
                 </p>
               )}
               <div className="flex flex-col gap-0.5">
-                {section.items.map(({ label, href, icon: Icon }) => {
+                {section.items
+                  .filter(item => !item.adminOnly || isAdmin)
+                  .map(({ label, href, icon: Icon }) => {
                   const isActive = pathname === href || pathname?.startsWith(href + '/');
                   return (
                     <button

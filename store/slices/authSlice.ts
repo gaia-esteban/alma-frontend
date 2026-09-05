@@ -8,6 +8,7 @@ interface AuthState {
     photoURL?: string;
     providerId?: string;
     companyAccess: string[];
+    role?: string;
   } | null;
   token: string;
   isHydrated: boolean;

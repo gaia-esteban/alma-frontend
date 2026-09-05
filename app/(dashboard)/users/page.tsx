@@ -1,110 +1,116 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useGetSuppliersQuery } from '@/store/api/suppliersApi';
+import { useRouter } from 'next/navigation';
+import { useGetUsersQuery, useDeleteUserMutation } from '@/store/api/usersApi';
 import { useGetCompaniesQuery } from '@/store/api/companiesApi';
-import { useAppSelector } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
-import { Supplier } from '@/types/supplier';
-import { SupplierSlideOver } from '@/components/features/suppliers/SupplierSlideOver';
+import { AdminUser } from '@/types/adminUser';
+import { UserSlideOver } from '@/components/features/users/UserSlideOver';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { colors } from '@/lib/colors';
-import { Plus, Pencil, Search, AlertCircle, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, AlertCircle } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 50;
 
-export default function SuppliersPage() {
-  const { isHydrated } = useAuth();
-  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
+export default function UsersPage() {
+  const router = useRouter();
+  const { user: currentUser, isHydrated } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
 
-  const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 }, { skip: !isHydrated });
-  const companies = useMemo(() => companiesData?.data ?? [], [companiesData?.data]);
-
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[] | null>(null);
-
-  // Default to all accessible companies selected once the companies list loads
   useEffect(() => {
-    if (companies.length && selectedCompanyIds === null) {
-      setSelectedCompanyIds(companies.map(c => String(c.id)));
+    if (isHydrated && !isAdmin) {
+      router.replace('/home');
     }
-  }, [companies, selectedCompanyIds]);
+  }, [isHydrated, isAdmin, router]);
 
-  const toggleCompany = (id: string) => {
-    setSelectedCompanyIds(prev => {
-      const current = prev ?? companies.map(c => String(c.id));
-      return current.includes(id) ? current.filter(c => c !== id) : [...current, id];
-    });
-  };
-
-  const companyId = (selectedCompanyIds ?? companyAccess ?? []).join(',');
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 1000 }, { skip: !isHydrated || !isAdmin });
+  const companies = useMemo(() => companiesData?.data ?? [], [companiesData?.data]);
 
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
 
   const [slideOverOpen, setSlideOverOpen] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
-  const { data, isLoading, error } = useGetSuppliersQuery(
-    { companyId, page, limit: PAGE_SIZE },
-    { skip: !isHydrated || !companyId }
+  const { data, isLoading, error } = useGetUsersQuery(
+    { page, limit: PAGE_SIZE },
+    { skip: !isHydrated || !isAdmin }
   );
+  const [deleteUser] = useDeleteUserMutation();
 
-  const noCompanySelected = selectedCompanyIds !== null && selectedCompanyIds.length === 0;
-
-  const suppliers = useMemo(() => (noCompanySelected ? [] : data?.data ?? []), [data?.data, noCompanySelected]);
-  const total = noCompanySelected ? 0 : data?.total ?? 0;
+  const users = useMemo(() => data?.data ?? [], [data?.data]);
+  const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
+  const companyNamesFor = (companyAccess: string[]) =>
+    companies
+      .filter(c => companyAccess.includes(String(c.id)))
+      .map(c => c.description)
+      .join(', ') || '—';
+
   const filtered = useMemo(() => {
-    let list = suppliers;
+    let list = users;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
-        s =>
-          s.identification.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q)
+        u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
       );
     }
-    if (activeFilter === 'active') list = list.filter(s => s.is_active);
-    if (activeFilter === 'inactive') list = list.filter(s => !s.is_active);
+    if (activeFilter === 'active') list = list.filter(u => u.active);
+    if (activeFilter === 'inactive') list = list.filter(u => !u.active);
     return list;
-  }, [suppliers, search, activeFilter]);
+  }, [users, search, activeFilter]);
 
   const openCreate = () => {
-    setSelectedSupplier(null);
+    setSelectedUser(null);
     setSlideOverOpen(true);
   };
 
-  const openEdit = (supplier: Supplier) => {
-    setSelectedSupplier(supplier);
+  const openEdit = (u: AdminUser) => {
+    setSelectedUser(u);
     setSlideOverOpen(true);
   };
 
-  const activeCount = suppliers.filter(s => s.is_active).length;
-  const inactiveCount = suppliers.filter(s => !s.is_active).length;
+  const handleDelete = async (u: AdminUser) => {
+    if (String(u.id) === String(currentUser?.uid)) {
+      toast.error('No podés eliminar tu propia cuenta');
+      return;
+    }
+    if (!window.confirm(`¿Eliminar al usuario ${u.name} (${u.email})? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    try {
+      await deleteUser({ id: u.id }).unwrap();
+      toast.success('Usuario eliminado correctamente');
+    } catch (err) {
+      const e = err as { data?: { message?: string } };
+      toast.error(e?.data?.message || 'Error al eliminar el usuario');
+    }
+  };
+
+  const activeCount = users.filter(u => u.active).length;
+  const inactiveCount = users.filter(u => !u.active).length;
+
+  if (!isHydrated || !isAdmin) {
+    return null;
+  }
 
   return (
     <main className="w-full">
 
       <PageHeader
-        title="Proveedores"
+        title="Usuarios"
         action={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Nuevo proveedor
+            Nuevo usuario
           </Button>
         }
       />
@@ -120,7 +126,7 @@ export default function SuppliersPage() {
           style={{ backgroundColor: colors.muted }}
         >
           {([
-            { key: 'all', label: 'Todos', count: suppliers.length },
+            { key: 'all', label: 'Todos', count: users.length },
             { key: 'active', label: 'Activos', count: activeCount },
             { key: 'inactive', label: 'Inactivos', count: inactiveCount },
           ] as const).map(({ key, label, count }) => (
@@ -154,44 +160,12 @@ export default function SuppliersPage() {
             style={{ color: colors.mutedForeground }}
           />
           <Input
-            placeholder="Buscar por identificación o descripción…"
+            placeholder="Buscar por nombre o email…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             className="pl-8 h-9 text-sm"
           />
         </div>
-
-        {/* Company filter */}
-        {companies.length > 1 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
-                <Building2 className="h-3.5 w-3.5" />
-                Compañías
-                <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ backgroundColor: colors.muted, color: colors.mutedForeground }}
-                >
-                  {(selectedCompanyIds ?? companies.map(c => String(c.id))).length}/{companies.length}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64">
-              <DropdownMenuLabel>Filtrar por compañía</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {companies.map(company => (
-                <DropdownMenuCheckboxItem
-                  key={company.id}
-                  checked={(selectedCompanyIds ?? []).includes(String(company.id))}
-                  onCheckedChange={() => toggleCompany(String(company.id))}
-                  onSelect={e => e.preventDefault()}
-                >
-                  {company.description}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       {/* Table */}
@@ -202,7 +176,7 @@ export default function SuppliersPage() {
         <table className="w-full border-collapse">
           <thead>
             <tr style={{ backgroundColor: colors.background, borderBottom: `1px solid ${colors.border}` }}>
-              {['Identificación', 'Descripción', 'Compañía', 'Cta. débito', 'Cta. crédito', 'Estado', ''].map(h => (
+              {['Nombre', 'Email', 'Rol', 'Compañías', 'Estado', ''].map(h => (
                 <th
                   key={h}
                   className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider last:text-right"
@@ -217,7 +191,7 @@ export default function SuppliersPage() {
             {isLoading && (
               Array.from({ length: PAGE_SIZE }).map((_, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${colors.border}` }}>
-                  {[1, 2, 3, 4, 5, 6, 7].map(c => (
+                  {[1, 2, 3, 4, 5, 6].map(c => (
                     <td key={c} className="px-4 py-3">
                       <Skeleton className="h-4 w-full" />
                     </td>
@@ -228,32 +202,22 @@ export default function SuppliersPage() {
 
             {!isLoading && error && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center">
+                <td colSpan={6} className="px-4 py-10 text-center">
                   <div className="flex flex-col items-center gap-2">
                     <AlertCircle className="h-5 w-5" style={{ color: colors.destructive }} />
                     <p className="text-sm" style={{ color: colors.destructive }}>
-                      Error al cargar los proveedores
+                      Error al cargar los usuarios
                     </p>
                   </div>
                 </td>
               </tr>
             )}
 
-            {!isLoading && !error && noCompanySelected && (
+            {!isLoading && !error && filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
+                <td colSpan={6} className="px-4 py-12 text-center">
                   <p className="text-sm" style={{ color: colors.mutedForeground }}>
-                    Selecciona al menos una compañía para ver proveedores
-                  </p>
-                </td>
-              </tr>
-            )}
-
-            {!isLoading && !error && !noCompanySelected && filtered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
-                  <p className="text-sm" style={{ color: colors.mutedForeground }}>
-                    {search ? 'No se encontraron proveedores con ese criterio' : 'No hay proveedores registrados'}
+                    {search ? 'No se encontraron usuarios con ese criterio' : 'No hay usuarios registrados'}
                   </p>
                   {!search && (
                     <button
@@ -268,9 +232,9 @@ export default function SuppliersPage() {
               </tr>
             )}
 
-            {!isLoading && !error && filtered.map((supplier, idx) => (
+            {!isLoading && !error && filtered.map((u, idx) => (
               <tr
-                key={supplier.id}
+                key={u.id}
                 className="transition-colors group"
                 style={{
                   borderBottom: idx < filtered.length - 1 ? `1px solid ${colors.border}` : undefined,
@@ -280,57 +244,66 @@ export default function SuppliersPage() {
               >
                 <td className="px-4 py-3">
                   <span className="text-sm font-semibold" style={{ color: colors.foreground }}>
-                    {supplier.identification}
+                    {u.name}
                   </span>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm" style={{ color: colors.mutedForeground }}>
-                    {supplier.description || '—'}
+                    {u.email}
                   </span>
+                </td>
+                <td className="px-4 py-3">
+                  <Badge variant={u.role === 'admin' ? 'inReview' : 'outline'}>
+                    {u.role === 'admin' ? 'Administrador' : 'Usuario'}
+                  </Badge>
                 </td>
                 <td className="px-4 py-3">
                   <span className="text-sm" style={{ color: colors.foreground }}>
-                    {supplier.company?.description || '—'}
+                    {companyNamesFor(u.company_access)}
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm font-mono" style={{ color: colors.mutedForeground }}>
-                    {supplier.debit_account || '—'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="text-sm font-mono" style={{ color: colors.mutedForeground }}>
-                    {supplier.credit_account || '—'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <Badge variant={supplier.is_active ? 'approved' : 'draft'}>
-                    {supplier.is_active ? 'Activo' : 'Inactivo'}
+                  <Badge variant={u.active ? 'approved' : 'draft'}>
+                    {u.active ? 'Activo' : 'Inactivo'}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button
-                    onClick={() => openEdit(supplier)}
-                    className="inline-flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-semibold border opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{
-                      borderColor: colors.border,
-                      color: colors.foreground,
-                      backgroundColor: colors.surface ?? '#fff',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = colors.secondary;
-                      e.currentTarget.style.backgroundColor = colors.secondary;
-                      e.currentTarget.style.color = '#fff';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = colors.border;
-                      e.currentTarget.style.backgroundColor = colors.surface ?? '#fff';
-                      e.currentTarget.style.color = colors.foreground;
-                    }}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Editar
-                  </button>
+                  <div className="inline-flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => openEdit(u)}
+                      className="inline-flex items-center gap-1.5 px-3 h-7 rounded-md text-xs font-semibold border"
+                      style={{
+                        borderColor: colors.border,
+                        color: colors.foreground,
+                        backgroundColor: colors.surface ?? '#fff',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.borderColor = colors.secondary;
+                        e.currentTarget.style.backgroundColor = colors.secondary;
+                        e.currentTarget.style.color = '#fff';
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.borderColor = colors.border;
+                        e.currentTarget.style.backgroundColor = colors.surface ?? '#fff';
+                        e.currentTarget.style.color = colors.foreground;
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u)}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md border"
+                      style={{
+                        borderColor: colors.border,
+                        color: colors.destructive,
+                        backgroundColor: colors.surface ?? '#fff',
+                      }}
+                      aria-label="Eliminar usuario"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -379,10 +352,10 @@ export default function SuppliersPage() {
       </div>
 
       {/* Slide-over */}
-      <SupplierSlideOver
+      <UserSlideOver
         open={slideOverOpen}
         onOpenChange={setSlideOverOpen}
-        supplier={selectedSupplier}
+        user={selectedUser}
         companies={companies}
       />
     </main>
