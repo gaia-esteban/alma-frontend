@@ -191,7 +191,7 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
           <SheetDescription className="text-xs" style={{ color: colors.mutedForeground }}>
             {isEditing
               ? `Modificando ${supplier!.identification}`
-              : 'Completá los datos para registrar un nuevo proveedor'}
+              : 'Completa los datos para registrar un nuevo proveedor'}
           </SheetDescription>
         </SheetHeader>
 
@@ -210,7 +210,7 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
                   disabled={isEditing}
                 >
                   <SelectTrigger className="w-full" aria-invalid={!!errors.companyId}>
-                    <SelectValue placeholder="Seleccioná una compañía" />
+                    <SelectValue placeholder="Selecciona una compañía" />
                   </SelectTrigger>
                   <SelectContent>
                     {companies.map(company => (
