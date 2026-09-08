@@ -14,8 +14,10 @@ export interface IncomingOrderByIdResponse {
 
 export interface IncomingOrdersQueryParams {
   companyId: string;
-  offset?: number;
+  page?: number;
   limit?: number;
+  status?: string;
+  search?: string;
   orderBy?: string;
   order?: string;
   populate?: boolean;
@@ -44,7 +46,7 @@ export const incomingOrdersApi = api.injectEndpoints({
         url: "/incoming-orders",
         method: "GET",
         params: {
-          offset: 0,
+          page: 1,
           limit: 50,
           orderBy: "created_at",
           order: "DESC",

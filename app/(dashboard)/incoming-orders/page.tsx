@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation, IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
+import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { toast } from "sonner";
-import { FileSpreadsheet, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSpreadsheet, Search, Building2 } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import { DataTable } from "./data-table";
 import { createColumns } from "./columns";
@@ -11,6 +12,21 @@ import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOr
 import { IncomingOrder, IncomingOrderStatus } from "@/types/incoming-order";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -30,41 +46,99 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
   { key: 'Fallida',    label: 'Fallida' },
 ];
 
+const PAGE_SIZES = [25, 50, 100];
+
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
   const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
-  const companyId = companyAccess?.join(',');
+  const defaultCompanyId = companyAccess?.join(',');
+
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<IncomingOrderByIdResponse | null>(null);
   const [selectedRows, setSelectedRows] = useState<IncomingOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[] | null>(null); // null = all companies (default)
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
-  const { data, isLoading, error } = useGetIncomingOrdersQuery({ companyId: companyId! }, {
-    skip: !isHydrated || !companyId,
+  // Debounce the search box so it doesn't fire a request on every keystroke
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(handle);
+  }, [search]);
+
+  const { data: companiesData } = useGetCompaniesQuery({ limit: 100 }, { skip: !isHydrated });
+  const companies = useMemo(() => companiesData?.data ?? [], [companiesData?.data]);
+
+  const effectiveCompanyId = selectedCompanyIds !== null
+    ? selectedCompanyIds.join(',')
+    : defaultCompanyId;
+
+  const isAllCompaniesSelected = selectedCompanyIds === null;
+
+  const toggleCompany = useCallback((id: string) => {
+    setSelectedCompanyIds(prev => {
+      const base = prev ?? companies.map(c => String(c.id));
+      const next = base.includes(id) ? base.filter(c => c !== id) : [...base, id];
+      return next;
+    });
+    setPage(1);
+  }, [companies]);
+
+  const resetCompanyFilter = useCallback(() => {
+    setSelectedCompanyIds(null);
+    setPage(1);
+  }, []);
+
+  // Reset to page 1 whenever a filter that changes the result set changes
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, debouncedSearch, pageSize]);
+
+  const baseQueryArgs = useMemo(() => ({
+    companyId: effectiveCompanyId!,
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+  }), [effectiveCompanyId, debouncedSearch]);
+
+  const dataQueryArgs = useMemo(() => ({
+    ...baseQueryArgs,
+    page,
+    limit: pageSize,
+    ...(statusFilter !== 'all' ? { status: statusFilter } : {}),
+  }), [baseQueryArgs, page, pageSize, statusFilter]);
+
+  const skipQueries = !isHydrated || !effectiveCompanyId;
+
+  const { data, isLoading, isFetching, error } = useGetIncomingOrdersQuery(dataQueryArgs, {
+    skip: skipQueries,
   });
+
+  // One lightweight (limit: 1) request per tab, scoped to the same company/search filters,
+  // so tab totals reflect the full DB count rather than just the rows loaded on this page.
+  const countQueryOpts = { skip: skipQueries };
+  const { data: countAll } = useGetIncomingOrdersQuery({ ...baseQueryArgs, limit: 1 }, countQueryOpts);
+  const { data: countPendiente } = useGetIncomingOrdersQuery({ ...baseQueryArgs, limit: 1, status: 'Pendiente' }, countQueryOpts);
+  const { data: countProcesada } = useGetIncomingOrdersQuery({ ...baseQueryArgs, limit: 1, status: 'Procesada' }, countQueryOpts);
+  const { data: countFallida } = useGetIncomingOrdersQuery({ ...baseQueryArgs, limit: 1, status: 'Fallida' }, countQueryOpts);
+
+  const countFor = (key: StatusFilter): number => {
+    switch (key) {
+      case 'all': return countAll?.total ?? 0;
+      case 'Pendiente': return countPendiente?.total ?? 0;
+      case 'Procesada': return countProcesada?.total ?? 0;
+      case 'Fallida': return countFallida?.total ?? 0;
+    }
+  };
+
   const [triggerGetOrderById] = useLazyGetIncomingOrderByIdQuery();
   const [exportIncomingOrders, { isLoading: isExporting }] = useExportIncomingOrdersMutation();
 
   const orders = useMemo(() => data?.data ?? [], [data?.data]);
-
-  const filtered = useMemo(() => {
-    let list = orders;
-    if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(o =>
-        o.number.toLowerCase().includes(q) ||
-        (o.supplier as { name?: string })?.name?.toLowerCase().includes(q) ||
-        o.supplierId.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [orders, statusFilter, search]);
-
-  const countFor = (key: StatusFilter) =>
-    key === 'all' ? orders.length : orders.filter(o => o.status === key).length;
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   const handleDetailsClick = async (order: IncomingOrder) => {
     // Store the clicked row data
@@ -72,7 +146,7 @@ export default function IncomingOrders() {
 
     try {
       // Fetch detailed data from API
-      const orderDetails = await triggerGetOrderById({ id: order.id, companyId: companyId! }).unwrap();
+      const orderDetails = await triggerGetOrderById({ id: order.id, companyId: effectiveCompanyId! }).unwrap();
       setSelectedOrderDetails(orderDetails);
       setModalOpen(true);
     } catch (error) {
@@ -163,6 +237,38 @@ export default function IncomingOrders() {
               ))}
             </div>
 
+            {/* Company filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1.5">
+                  <Building2 className="h-3.5 w-3.5" />
+                  {isAllCompaniesSelected
+                    ? "Todas las compañías"
+                    : `${selectedCompanyIds!.length} compañía${selectedCompanyIds!.length === 1 ? "" : "s"}`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onClick={resetCompanyFilter}>
+                  Todas las compañías
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {companies.map(company => {
+                  const id = String(company.id);
+                  const checked = isAllCompaniesSelected || (selectedCompanyIds?.includes(id) ?? false);
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={id}
+                      checked={checked}
+                      onSelect={(e) => e.preventDefault()}
+                      onCheckedChange={() => toggleCompany(id)}
+                    >
+                      {company.description}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Search */}
             <div className="relative flex-1 w-full sm:w-auto">
               <Search
@@ -209,12 +315,62 @@ export default function IncomingOrders() {
             </div>
           )}
           {!isLoading && !error && (
-            <DataTable
-              columns={columns}
-              data={filtered}
-              showFilters={false}
-              onRowSelectionChange={handleRowSelectionChange}
-            />
+            <>
+              <DataTable
+                columns={columns}
+                data={orders}
+                showFilters={false}
+                onRowSelectionChange={handleRowSelectionChange}
+              />
+
+              {/* Pagination */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-3 px-1">
+                <div className="text-xs" style={{ color: colors.mutedForeground }}>
+                  {total === 0
+                    ? "Sin resultados"
+                    : `Mostrando ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
+                  {isFetching && " · actualizando…"}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs" style={{ color: colors.mutedForeground }}>Por página</span>
+                    <Select value={`${pageSize}`} onValueChange={(v) => setPageSize(Number(v))}>
+                      <SelectTrigger className="h-8 w-[70px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAGE_SIZES.map(size => (
+                          <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs font-medium min-w-[90px] text-center" style={{ color: colors.mutedForeground }}>
+                      Página {page} de {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
