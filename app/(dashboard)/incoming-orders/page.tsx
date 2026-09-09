@@ -16,7 +16,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -144,13 +143,16 @@ export default function IncomingOrders() {
     setSelectedCompanyIds(prev => {
       const base = prev ?? companies.map(c => String(c.id));
       const next = base.includes(id) ? base.filter(c => c !== id) : [...base, id];
-      return next;
+      // Selecting every company individually is equivalent to "all" — collapse back to it.
+      return next.length === companies.length ? null : next;
     });
     setPage(1);
   }, [companies]);
 
-  const resetCompanyFilter = useCallback(() => {
-    setSelectedCompanyIds(null);
+  // Acts as a master checkbox: toggles between "every company selected" and "none selected",
+  // so picking a single company out of many only takes two clicks instead of N-1 unchecks.
+  const toggleAllCompanies = useCallback(() => {
+    setSelectedCompanyIds(prev => (prev === null ? [] : null));
     setPage(1);
   }, []);
 
@@ -305,13 +307,19 @@ export default function IncomingOrders() {
                   <Building2 className="h-3.5 w-3.5" />
                   {isAllCompaniesSelected
                     ? "Todas las compañías"
-                    : `${selectedCompanyIds!.length} compañía${selectedCompanyIds!.length === 1 ? "" : "s"}`}
+                    : selectedCompanyIds!.length === 0
+                      ? "Ninguna compañía"
+                      : `${selectedCompanyIds!.length} compañía${selectedCompanyIds!.length === 1 ? "" : "s"}`}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuItem onClick={resetCompanyFilter}>
+                <DropdownMenuCheckboxItem
+                  checked={isAllCompaniesSelected}
+                  onSelect={(e) => e.preventDefault()}
+                  onCheckedChange={toggleAllCompanies}
+                >
                   Todas las compañías
-                </DropdownMenuItem>
+                </DropdownMenuCheckboxItem>
                 <DropdownMenuSeparator />
                 {companies.map(company => {
                   const id = String(company.id);
