@@ -48,6 +48,67 @@ const STATUS_TABS: { key: StatusFilter; label: string }[] = [
 
 const PAGE_SIZES = [25, 50, 100];
 
+interface PaginationBarProps {
+  page: number;
+  totalPages: number;
+  pageSize: number;
+  total: number;
+  isFetching: boolean;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}
+
+function PaginationBar({ page, totalPages, pageSize, total, isFetching, onPageChange, onPageSizeChange }: PaginationBarProps) {
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1">
+      <div className="text-xs" style={{ color: colors.mutedForeground }}>
+        {total === 0
+          ? "Sin resultados"
+          : `Mostrando ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
+        {isFetching && " · actualizando…"}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs" style={{ color: colors.mutedForeground }}>Por página</span>
+          <Select value={`${pageSize}`} onValueChange={(v) => onPageSizeChange(Number(v))}>
+            <SelectTrigger className="h-8 w-[70px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map(size => (
+                <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            disabled={page <= 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-xs font-medium min-w-[90px] text-center" style={{ color: colors.mutedForeground }}>
+            Página {page} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            disabled={page >= totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
   const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
@@ -316,6 +377,18 @@ export default function IncomingOrders() {
           )}
           {!isLoading && !error && (
             <>
+              <div className="mb-3">
+                <PaginationBar
+                  page={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  total={total}
+                  isFetching={isFetching}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
+
               <DataTable
                 columns={columns}
                 data={orders}
@@ -323,52 +396,16 @@ export default function IncomingOrders() {
                 onRowSelectionChange={handleRowSelectionChange}
               />
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-3 px-1">
-                <div className="text-xs" style={{ color: colors.mutedForeground }}>
-                  {total === 0
-                    ? "Sin resultados"
-                    : `Mostrando ${(page - 1) * pageSize + 1}–${Math.min(page * pageSize, total)} de ${total}`}
-                  {isFetching && " · actualizando…"}
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs" style={{ color: colors.mutedForeground }}>Por página</span>
-                    <Select value={`${pageSize}`} onValueChange={(v) => setPageSize(Number(v))}>
-                      <SelectTrigger className="h-8 w-[70px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAGE_SIZES.map(size => (
-                          <SelectItem key={size} value={`${size}`}>{size}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setPage(p => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-xs font-medium min-w-[90px] text-center" style={{ color: colors.mutedForeground }}>
-                      Página {page} de {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                      disabled={page >= totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+              <div className="mt-3">
+                <PaginationBar
+                  page={page}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  total={total}
+                  isFetching={isFetching}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
               </div>
             </>
           )}
