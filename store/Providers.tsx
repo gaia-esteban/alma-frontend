@@ -2,11 +2,12 @@
 
 
 import { Provider } from "react-redux";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { store } from "./";
 import { hydrate, setHydrated } from "./slices/authSlice";
 import * as authStorage from "@/lib/authStorage";
+import { SessionExpiredModal } from "@/components/auth/SessionExpiredModal";
 
 
 interface Props {
@@ -38,6 +39,9 @@ export const Providers = ({ children }: Props) => {
     <Provider store={store}>
       <AuthHydration>
         {children}
+        <Suspense fallback={null}>
+          <SessionExpiredModal />
+        </Suspense>
       </AuthHydration>
     </Provider>
   );
