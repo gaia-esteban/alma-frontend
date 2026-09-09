@@ -71,7 +71,9 @@ export const createColumns = (
     header: "Fecha de carga",
     cell: ({ row }) => {
       const date = new Date(row.getValue("createdAt"));
-      return date.toLocaleDateString();
+      const datePart = date.toLocaleDateString();
+      const timePart = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+      return `${datePart} ${timePart}`;
     },
   },
   {
