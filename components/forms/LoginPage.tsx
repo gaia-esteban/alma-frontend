@@ -20,7 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { FormErrors } from "@/types/login";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useVerifyOtpMutation } from "@/store/api/authApi";
 import { toast } from "sonner";
@@ -44,6 +44,12 @@ export default function LoginPage() {
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+  // Only allow same-app relative paths — never let the query param send us off-site.
+  const redirectTo = redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+    ? redirectParam
+    : "/incoming-orders";
 
   const handleEmailSubmit = async () => {
     setFormErrors({});
@@ -256,7 +262,7 @@ export default function LoginPage() {
                     storeCredentials(result);
                     setShow401Modal(false);
                     setModal401Otp("");
-                    router.push("/incoming-orders");
+                    router.push(redirectTo);
                   } catch (err) {
                     const error = err as { status?: number; data?: { message?: string } };
                     if (error?.status === 401) {
