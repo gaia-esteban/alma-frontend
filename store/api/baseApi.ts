@@ -8,6 +8,7 @@ export enum TagTypes {
   Vendor = "Vendor",
   User = "User",
   Supplier = "Supplier",
+  IncomingOrder = "IncomingOrder",
 }
 
 const rawBaseQuery = fetchBaseQuery({

@@ -1,5 +1,5 @@
 // store/api/incomingOrdersApi.ts
-import { api } from "./baseApi";
+import { api, TagTypes } from "./baseApi";
 import { IncomingOrder } from "@/types/incoming-order";
 
 export interface IncomingOrdersResponse {
@@ -54,6 +54,7 @@ export const incomingOrdersApi = api.injectEndpoints({
           ...params,
         },
       }),
+      providesTags: [TagTypes.IncomingOrder],
     }),
     getIncomingOrderById: builder.query<IncomingOrderByIdResponse, GetIncomingOrderByIdParams>({
       query: ({ id, companyId }) => ({
@@ -68,6 +69,7 @@ export const incomingOrdersApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
+      invalidatesTags: [TagTypes.IncomingOrder],
     }),
   }),
 });
