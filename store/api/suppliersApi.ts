@@ -4,6 +4,11 @@ import { Supplier } from '@/types/supplier';
 export interface SuppliersResponse {
   data: Supplier[];
   total: number;
+  counts: {
+    all: number;
+    active: number;
+    inactive: number;
+  };
 }
 
 export interface SupplierSingleResponse {
@@ -16,6 +21,7 @@ export interface SuppliersQueryParams {
   companyId?: string;
   is_active?: boolean;
   identification?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }

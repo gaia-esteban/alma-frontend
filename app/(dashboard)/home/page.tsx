@@ -3,18 +3,39 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FacturasTab } from './FacturasTab';
 import { AlmaDigitalTab } from './AlmaDigitalTab';
+import { CompanyFilter } from '@/components/dashboard/CompanyFilter';
+import { useCompanyFilter } from '@/hooks/useCompanyFilter';
 import { colors } from '@/lib/colors';
 
 export default function HomePage() {
+  const {
+    companies,
+    selectedCompanyIds,
+    isAllCompaniesSelected,
+    effectiveCompanyId,
+    toggleCompany,
+    toggleAllCompanies,
+  } = useCompanyFilter();
+
   return (
     <div className="w-full space-y-5">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.secondary }}>
-          Inicio
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Vista analítica del sistema
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight" style={{ color: colors.secondary }}>
+            Inicio
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Vista analítica del sistema
+          </p>
+        </div>
+
+        <CompanyFilter
+          companies={companies}
+          selectedCompanyIds={selectedCompanyIds}
+          isAllCompaniesSelected={isAllCompaniesSelected}
+          onToggleCompany={toggleCompany}
+          onToggleAll={toggleAllCompanies}
+        />
       </div>
 
       <Tabs defaultValue="alma-digital" className="w-full">
@@ -34,11 +55,11 @@ export default function HomePage() {
         </TabsList>
 
         <TabsContent value="alma-digital" className="mt-5">
-          <AlmaDigitalTab />
+          <AlmaDigitalTab companyId={effectiveCompanyId} />
         </TabsContent>
 
         <TabsContent value="facturas" className="mt-5">
-          <FacturasTab />
+          <FacturasTab companyId={effectiveCompanyId} />
         </TabsContent>
       </Tabs>
     </div>

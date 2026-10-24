@@ -51,37 +51,37 @@ export default function SuppliersPage() {
   const companyId = (selectedCompanyIds ?? companyAccess ?? []).join(',');
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [page, setPage] = useState(1);
 
   const [slideOverOpen, setSlideOverOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
+  // Debounce the search box so we don't fire a request on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const { data, isLoading, error } = useGetSuppliersQuery(
-    { companyId, page, limit: PAGE_SIZE },
+    {
+      companyId,
+      page,
+      limit: PAGE_SIZE,
+      search: debouncedSearch || undefined,
+      is_active: activeFilter === 'all' ? undefined : activeFilter === 'active',
+    },
     { skip: !isHydrated || !companyId }
   );
 
   const noCompanySelected = selectedCompanyIds !== null && selectedCompanyIds.length === 0;
 
-  const suppliers = useMemo(() => (noCompanySelected ? [] : data?.data ?? []), [data?.data, noCompanySelected]);
+  const filtered = useMemo(() => (noCompanySelected ? [] : data?.data ?? []), [data?.data, noCompanySelected]);
   const total = noCompanySelected ? 0 : data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const filtered = useMemo(() => {
-    let list = suppliers;
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        s =>
-          s.identification.toLowerCase().includes(q) ||
-          s.description?.toLowerCase().includes(q)
-      );
-    }
-    if (activeFilter === 'active') list = list.filter(s => s.is_active);
-    if (activeFilter === 'inactive') list = list.filter(s => !s.is_active);
-    return list;
-  }, [suppliers, search, activeFilter]);
+  const counts = data?.counts ?? { all: 0, active: 0, inactive: 0 };
 
   const openCreate = () => {
     setSelectedSupplier(null);
@@ -92,9 +92,6 @@ export default function SuppliersPage() {
     setSelectedSupplier(supplier);
     setSlideOverOpen(true);
   };
-
-  const activeCount = suppliers.filter(s => s.is_active).length;
-  const inactiveCount = suppliers.filter(s => !s.is_active).length;
 
   return (
     <main className="w-full">
@@ -120,9 +117,9 @@ export default function SuppliersPage() {
           style={{ backgroundColor: colors.muted }}
         >
           {([
-            { key: 'all', label: 'Todos', count: suppliers.length },
-            { key: 'active', label: 'Activos', count: activeCount },
-            { key: 'inactive', label: 'Inactivos', count: inactiveCount },
+            { key: 'all', label: 'Todos', count: counts.all },
+            { key: 'active', label: 'Activos', count: counts.active },
+            { key: 'inactive', label: 'Inactivos', count: counts.inactive },
           ] as const).map(({ key, label, count }) => (
             <button
               key={key}
