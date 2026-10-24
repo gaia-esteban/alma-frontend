@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { useGetIncomingOrdersQuery } from '@/store/api/incomingOrdersApi';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppSelector } from '@/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSelector } from '@/components/dashboard/TimelineSelector';
@@ -19,10 +18,12 @@ import {
 import { colors } from '@/lib/colors';
 import { DollarSign, FileText, TrendingUp, Clock, AlertCircle, Calendar } from 'lucide-react';
 
-export function FacturasTab() {
+interface FacturasTabProps {
+  companyId?: string;
+}
+
+export function FacturasTab({ companyId }: FacturasTabProps) {
   const { isHydrated } = useAuth();
-  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
-  const companyId = companyAccess?.join(',');
   const [timeline, setTimeline] = useState<TimelineOption>('today');
 
   const { data, isLoading, error } = useGetIncomingOrdersQuery(

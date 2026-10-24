@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGetIncomingOrdersQuery, useLazyGetIncomingOrderByIdQuery, useExportIncomingOrdersMutation, IncomingOrderByIdResponse } from "@/store/api/incomingOrdersApi";
-import { useGetCompaniesQuery } from "@/store/api/companiesApi";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, FileSpreadsheet, Search, Building2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileSpreadsheet, Search } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import { DataTable } from "./data-table";
 import { createColumns } from "./columns";
@@ -12,13 +11,8 @@ import { IncomingOrderDetailsModal } from "../incoming-orders-details/IncomingOr
 import { IncomingOrder, IncomingOrderStatus } from "@/types/incoming-order";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { CompanyFilter } from "@/components/dashboard/CompanyFilter";
+import { useCompanyFilter } from "@/hooks/useCompanyFilter";
 import {
   Select,
   SelectContent,
@@ -33,7 +27,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import { useAppSelector } from "@/store";
 import { colors } from "@/lib/colors";
 
 type StatusFilter = 'all' | IncomingOrderStatus;
@@ -110,8 +103,14 @@ function PaginationBar({ page, totalPages, pageSize, total, isFetching, onPageCh
 
 export default function IncomingOrders() {
   const { isHydrated } = useAuth();
-  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
-  const defaultCompanyId = companyAccess?.join(',');
+  const {
+    companies,
+    selectedCompanyIds,
+    isAllCompaniesSelected,
+    effectiveCompanyId,
+    toggleCompany,
+    toggleAllCompanies,
+  } = useCompanyFilter();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<IncomingOrder | null>(null);
@@ -120,7 +119,6 @@ export default function IncomingOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[] | null>(null); // null = all companies (default)
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
@@ -130,36 +128,10 @@ export default function IncomingOrders() {
     return () => clearTimeout(handle);
   }, [search]);
 
-  const { data: companiesData } = useGetCompaniesQuery({ limit: 100 }, { skip: !isHydrated });
-  const companies = useMemo(() => companiesData?.data ?? [], [companiesData?.data]);
-
-  const effectiveCompanyId = selectedCompanyIds !== null
-    ? selectedCompanyIds.join(',')
-    : defaultCompanyId;
-
-  const isAllCompaniesSelected = selectedCompanyIds === null;
-
-  const toggleCompany = useCallback((id: string) => {
-    setSelectedCompanyIds(prev => {
-      const base = prev ?? companies.map(c => String(c.id));
-      const next = base.includes(id) ? base.filter(c => c !== id) : [...base, id];
-      // Selecting every company individually is equivalent to "all" — collapse back to it.
-      return next.length === companies.length ? null : next;
-    });
-    setPage(1);
-  }, [companies]);
-
-  // Acts as a master checkbox: toggles between "every company selected" and "none selected",
-  // so picking a single company out of many only takes two clicks instead of N-1 unchecks.
-  const toggleAllCompanies = useCallback(() => {
-    setSelectedCompanyIds(prev => (prev === null ? [] : null));
-    setPage(1);
-  }, []);
-
   // Reset to page 1 whenever a filter that changes the result set changes
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, debouncedSearch, pageSize]);
+  }, [statusFilter, debouncedSearch, pageSize, effectiveCompanyId]);
 
   const baseQueryArgs = useMemo(() => ({
     companyId: effectiveCompanyId!,
@@ -301,42 +273,13 @@ export default function IncomingOrders() {
             </div>
 
             {/* Company filter */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 shrink-0 gap-1.5">
-                  <Building2 className="h-3.5 w-3.5" />
-                  {isAllCompaniesSelected
-                    ? "Todas las compañías"
-                    : selectedCompanyIds!.length === 0
-                      ? "Ninguna compañía"
-                      : `${selectedCompanyIds!.length} compañía${selectedCompanyIds!.length === 1 ? "" : "s"}`}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuCheckboxItem
-                  checked={isAllCompaniesSelected}
-                  onSelect={(e) => e.preventDefault()}
-                  onCheckedChange={toggleAllCompanies}
-                >
-                  Todas las compañías
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuSeparator />
-                {companies.map(company => {
-                  const id = String(company.id);
-                  const checked = isAllCompaniesSelected || (selectedCompanyIds?.includes(id) ?? false);
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={id}
-                      checked={checked}
-                      onSelect={(e) => e.preventDefault()}
-                      onCheckedChange={() => toggleCompany(id)}
-                    >
-                      {company.description}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <CompanyFilter
+              companies={companies}
+              selectedCompanyIds={selectedCompanyIds}
+              isAllCompaniesSelected={isAllCompaniesSelected}
+              onToggleCompany={toggleCompany}
+              onToggleAll={toggleAllCompanies}
+            />
 
             {/* Search */}
             <div className="relative flex-1 w-full sm:w-auto">

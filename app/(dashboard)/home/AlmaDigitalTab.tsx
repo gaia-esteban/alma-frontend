@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { useGetEventLogQuery } from '@/store/api/eventLogApi';
 import { useGetIncomingOrdersQuery } from '@/store/api/incomingOrdersApi';
 import { useAuth } from '@/hooks/useAuth';
-import { useAppSelector } from '@/store';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TimelineSelector } from '@/components/dashboard/TimelineSelector';
@@ -16,10 +15,12 @@ import { getTimeRange, bucketizeCounts, TimelineOption } from '@/lib/dashboard-u
 import { colors } from '@/lib/colors';
 import { LogIn, Users, FolderOpen, FileInput, AlertCircle } from 'lucide-react';
 
-export function AlmaDigitalTab() {
+interface AlmaDigitalTabProps {
+  companyId?: string;
+}
+
+export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
   const { isHydrated } = useAuth();
-  const companyAccess = useAppSelector(state => state.auth.user?.companyAccess);
-  const companyId = companyAccess?.join(',');
   const [timeline, setTimeline] = useState<TimelineOption>('today');
 
   const timeRange = useMemo(() => getTimeRange(timeline), [timeline]);
