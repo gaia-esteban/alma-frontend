@@ -1,9 +1,11 @@
 export type TimelineOption =
   | 'today'
   | 'yesterday'
-  | 'last_week'
+  | 'current_week'
+  | 'previous_week'
   | 'last_30_days'
   | 'current_month'
+  | 'previous_month'
   | 'last_90_days'
   | 'current_quarter';
 
@@ -15,6 +17,15 @@ export interface TimeRange {
   granularity: Granularity;
   startISO: string;
   endISO: string;
+}
+
+function startOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d;
 }
 
 export function getTimeRange(option: TimelineOption): TimeRange {
@@ -44,15 +55,28 @@ export function getTimeRange(option: TimelineOption): TimeRange {
         endISO: end.toISOString(),
       };
     }
-    case 'last_week': {
-      const start = new Date(todayStart);
-      start.setDate(start.getDate() - 7);
+    case 'current_week': {
+      const start = startOfWeek(now);
       return {
         startDate: start,
         endDate: now,
         granularity: 'day',
         startISO: start.toISOString(),
         endISO: now.toISOString(),
+      };
+    }
+    case 'previous_week': {
+      const thisWeekStart = startOfWeek(now);
+      const start = new Date(thisWeekStart);
+      start.setDate(start.getDate() - 7);
+      const end = new Date(thisWeekStart);
+      end.setMilliseconds(-1);
+      return {
+        startDate: start,
+        endDate: end,
+        granularity: 'day',
+        startISO: start.toISOString(),
+        endISO: end.toISOString(),
       };
     }
     case 'last_30_days': {
@@ -74,6 +98,18 @@ export function getTimeRange(option: TimelineOption): TimeRange {
         granularity: 'day',
         startISO: start.toISOString(),
         endISO: now.toISOString(),
+      };
+    }
+    case 'previous_month': {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 1);
+      end.setMilliseconds(-1);
+      return {
+        startDate: start,
+        endDate: end,
+        granularity: 'day',
+        startISO: start.toISOString(),
+        endISO: end.toISOString(),
       };
     }
     case 'last_90_days': {

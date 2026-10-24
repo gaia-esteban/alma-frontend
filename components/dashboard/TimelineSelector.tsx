@@ -13,13 +13,15 @@ import {
 } from '@/components/ui/select';
 
 const QUICK_OPTIONS: { value: TimelineOption; label: string }[] = [
-  { value: 'today', label: 'Hoy' },
-  { value: 'yesterday', label: 'Ayer' },
-  { value: 'last_week', label: 'Última semana' },
+  { value: 'current_week', label: 'Semana actual' },
+  { value: 'previous_week', label: 'Semana anterior' },
+  { value: 'current_month', label: 'Mes actual' },
+  { value: 'previous_month', label: 'Mes anterior' },
 ];
 
 const DROPDOWN_VALUES: TimelineOption[] = [
-  'current_month',
+  'today',
+  'yesterday',
   'last_30_days',
   'current_quarter',
   'last_90_days',
@@ -67,12 +69,16 @@ export function TimelineSelector({ value, onChange }: TimelineSelectorProps) {
               : 'bg-background text-muted-foreground hover:text-foreground',
           )}
         >
-          <SelectValue placeholder="Mes / Trimestre" />
+          <SelectValue placeholder="Más opciones" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
+            <SelectLabel className="text-xs text-muted-foreground px-2 py-1">Día</SelectLabel>
+            <SelectItem value="today" className="text-xs">Hoy</SelectItem>
+            <SelectItem value="yesterday" className="text-xs">Ayer</SelectItem>
+          </SelectGroup>
+          <SelectGroup>
             <SelectLabel className="text-xs text-muted-foreground px-2 py-1">Mes</SelectLabel>
-            <SelectItem value="current_month" className="text-xs">Mes actual</SelectItem>
             <SelectItem value="last_30_days" className="text-xs">Últimos 30 días</SelectItem>
           </SelectGroup>
           <SelectGroup>
