@@ -6,24 +6,27 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   type ChartConfig,
 } from '@/components/ui/chart';
 
 const chartConfig = {
   invoices: { label: 'Facturas recibidas', color: '#E8A020' },
+  files: { label: 'Archivos contables creados', color: '#243B50' },
 } satisfies ChartConfig;
 
 interface Props {
-  data: { label: string; invoices: number }[];
+  data: { label: string; invoices: number; files: number }[];
 }
 
-export function IncomingVolumeBarChart({ data }: Props) {
-  const hasData = useMemo(() => data.some(d => d.invoices > 0), [data]);
+export function InvoicesVsAccountingFilesBarChart({ data }: Props) {
+  const hasData = useMemo(() => data.some(d => d.invoices > 0 || d.files > 0), [data]);
 
   if (!hasData) {
     return (
       <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">
-        Sin facturas recibidas en el período
+        Sin facturas ni archivos contables en el período
       </div>
     );
   }
@@ -42,7 +45,9 @@ export function IncomingVolumeBarChart({ data }: Props) {
           width={30}
         />
         <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
         <Bar dataKey="invoices" fill="var(--color-invoices)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="files" fill="var(--color-files)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ChartContainer>
   );
