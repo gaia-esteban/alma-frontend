@@ -55,7 +55,7 @@ export default function HomePage() {
         </TabsList>
 
         <TabsContent value="alma-digital" className="mt-5">
-          <AlmaDigitalTab companyId={effectiveCompanyId} companies={companies} />
+          <AlmaDigitalTab companyId={effectiveCompanyId} />
         </TabsContent>
 
         <TabsContent value="facturas" className="mt-5">

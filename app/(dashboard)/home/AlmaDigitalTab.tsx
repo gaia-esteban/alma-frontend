@@ -14,7 +14,6 @@ import { InvoicesVsAccountingFilesBarChart } from '@/components/charts/InvoicesV
 import { CompanyVolumeBarChart } from '@/components/charts/CompanyVolumeBarChart';
 import { getTimeRange, bucketizeCounts, TimelineOption } from '@/lib/dashboard-utils';
 import { colors } from '@/lib/colors';
-import { Company } from '@/types/company';
 import { LogIn, FolderOpen, FileInput, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 type KpiStatus = 'success' | 'warning' | 'danger';
@@ -27,13 +26,12 @@ const statusColors: Record<KpiStatus, string> = {
 
 interface AlmaDigitalTabProps {
   companyId?: string;
-  companies?: Company[];
 }
 
-export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProps) {
+export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
   const { isHydrated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const [timeline, setTimeline] = useState<TimelineOption>('today');
+  const [timeline, setTimeline] = useState<TimelineOption>('current_month');
 
   const timeRange = useMemo(() => getTimeRange(timeline), [timeline]);
 
@@ -61,11 +59,6 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
       successLogins.map(e => e.createdAt),
       timeRange,
     ).map(d => ({ label: d.label, logins: d.count }));
-
-    const accountingChartData = bucketizeCounts(
-      accountingEvents.map(e => e.createdAt),
-      timeRange,
-    ).map(d => ({ label: d.label, files: d.count }));
 
     const userLoginCounts = successLogins.reduce<Record<string, number>>((acc, e) => {
       const email = e.userEmail ?? 'Desconocido';
@@ -96,17 +89,25 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
       timeRange,
     ).map(d => ({ label: d.label, invoices: d.count }));
 
-    const opsVolumeChartData = accountingChartData.map((d, i) => ({
+    // "Archivos contables creados" is derived from invoices marked Procesada,
+    // not from ACCOUNTING_FILE_CREATED events — those only started recording
+    // once event-logging was fixed in production, so historical processed
+    // invoices would otherwise show as zero despite being real.
+    const processedInvoices = filteredInvoices.filter(o => o.status === 'Procesada');
+    const accountingChartData = bucketizeCounts(
+      processedInvoices.map(o => o.createdAt),
+      timeRange,
+    ).map(d => ({ label: d.label, files: d.count }));
+
+    const opsVolumeChartData = invoiceChartData.map((d, i) => ({
       label: d.label,
-      files: d.files,
-      invoices: invoiceChartData[i]?.invoices ?? 0,
+      invoices: d.invoices,
+      files: accountingChartData[i]?.files ?? 0,
     }));
 
     const invoicesCreated = filteredInvoices.length;
-    const invoicesProcessed = filteredInvoices.filter(o => o.status === 'Procesada').length;
+    const invoicesProcessed = processedInvoices.length;
     const pctProcessed = invoicesCreated > 0 ? (invoicesProcessed / invoicesCreated) * 100 : 0;
-
-    const companyNameById = new Map(companies.map(c => [String(c.id), c.description]));
 
     const invoicesByCompany = filteredInvoices.reduce<Record<string, number>>((acc, o) => {
       const name = o.company?.description ?? 'Sin asignar';
@@ -114,8 +115,8 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
       return acc;
     }, {});
 
-    const filesByCompany = accountingEvents.reduce<Record<string, number>>((acc, e) => {
-      const name = (e.companyId != null && companyNameById.get(String(e.companyId))) || 'Sin asignar';
+    const filesByCompany = processedInvoices.reduce<Record<string, number>>((acc, o) => {
+      const name = o.company?.description ?? 'Sin asignar';
       acc[name] = (acc[name] ?? 0) + 1;
       return acc;
     }, {});
@@ -131,7 +132,7 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
 
     return {
       totalLogins: successLogins.length,
-      accountingFiles: accountingEvents.length,
+      accountingFiles: invoicesProcessed,
       invoicesReceived: filteredInvoices.length,
       invoicesCreated,
       invoicesProcessed,
@@ -144,7 +145,7 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
       opsVolumeChartData,
       companyBreakdown,
     };
-  }, [eventsData, invoicesData, timeRange, companies]);
+  }, [eventsData, invoicesData, timeRange]);
 
   if (isLoading) {
     return (
@@ -203,7 +204,7 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
     {
       label: 'Archivos contables',
       value: String(analytics.accountingFiles),
-      sub: 'Creados en el período',
+      sub: 'Facturas procesadas en el período',
       icon: FolderOpen,
     },
     {
@@ -258,30 +259,29 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
         ))}
       </div>
 
-      {/* Row 1 — facturas vs. archivos contables, por período y por empresa */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="shadow-none">
-          <CardHeader className="px-5 pt-5 pb-3">
-            <CardTitle className="text-sm font-semibold">Facturas recibidas vs. archivos contables creados</CardTitle>
-            <CardDescription className="text-xs">Comparativa de volumen por período</CardDescription>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <InvoicesVsAccountingFilesBarChart data={analytics.opsVolumeChartData} />
-          </CardContent>
-        </Card>
+      {/* Row 1 — facturas vs. archivos contables, por período */}
+      <Card className="shadow-none">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <CardTitle className="text-sm font-semibold">Facturas recibidas vs. archivos contables creados</CardTitle>
+          <CardDescription className="text-xs">Comparativa de volumen por período</CardDescription>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <InvoicesVsAccountingFilesBarChart data={analytics.opsVolumeChartData} />
+        </CardContent>
+      </Card>
 
-        <Card className="shadow-none">
-          <CardHeader className="px-5 pt-5 pb-3">
-            <CardTitle className="text-sm font-semibold">Facturas y archivos por empresa</CardTitle>
-            <CardDescription className="text-xs">Comparativa de volumen por empresa en el período</CardDescription>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <CompanyVolumeBarChart data={analytics.companyBreakdown} />
-          </CardContent>
-        </Card>
-      </div>
+      {/* Row 2 — facturas vs. archivos contables, por empresa */}
+      <Card className="shadow-none">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <CardTitle className="text-sm font-semibold">Facturas y archivos por empresa</CardTitle>
+          <CardDescription className="text-xs">Comparativa de volumen por empresa en el período</CardDescription>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <CompanyVolumeBarChart data={analytics.companyBreakdown} />
+        </CardContent>
+      </Card>
 
-      {/* Row 2 — historial de accesos */}
+      {/* Row 3 — historial de accesos */}
       <Card className="shadow-none">
         <CardHeader className="px-5 pt-5 pb-3">
           <CardTitle className="text-sm font-semibold">Historial de accesos</CardTitle>
@@ -292,7 +292,7 @@ export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProp
         </CardContent>
       </Card>
 
-      {/* Row 3 — usuarios más activos (solo administradores) */}
+      {/* Row 4 — usuarios más activos (solo administradores) */}
       {isAdmin && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="shadow-none">
