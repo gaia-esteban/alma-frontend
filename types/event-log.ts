@@ -5,5 +5,6 @@ export interface EventLog {
   userId: number | null;
   userEmail: string | null;
   outcome: 'FAILED' | 'SUCCESS' | null;
+  companyId: string | number | null;
   createdAt: string;
 }

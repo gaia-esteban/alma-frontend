@@ -11,8 +11,10 @@ import { LoginHistoryAreaChart } from '@/components/charts/LoginHistoryAreaChart
 import { TopUsersRankList } from '@/components/charts/TopUsersRankList';
 import { TopUsersByFilesRankList } from '@/components/charts/TopUsersByFilesRankList';
 import { InvoicesVsAccountingFilesBarChart } from '@/components/charts/InvoicesVsAccountingFilesBarChart';
+import { CompanyVolumeBarChart } from '@/components/charts/CompanyVolumeBarChart';
 import { getTimeRange, bucketizeCounts, TimelineOption } from '@/lib/dashboard-utils';
 import { colors } from '@/lib/colors';
+import { Company } from '@/types/company';
 import { LogIn, FolderOpen, FileInput, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 type KpiStatus = 'success' | 'warning' | 'danger';
@@ -25,9 +27,10 @@ const statusColors: Record<KpiStatus, string> = {
 
 interface AlmaDigitalTabProps {
   companyId?: string;
+  companies?: Company[];
 }
 
-export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
+export function AlmaDigitalTab({ companyId, companies = [] }: AlmaDigitalTabProps) {
   const { isHydrated, user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [timeline, setTimeline] = useState<TimelineOption>('today');
@@ -103,6 +106,29 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
     const invoicesProcessed = filteredInvoices.filter(o => o.status === 'Procesada').length;
     const pctProcessed = invoicesCreated > 0 ? (invoicesProcessed / invoicesCreated) * 100 : 0;
 
+    const companyNameById = new Map(companies.map(c => [String(c.id), c.description]));
+
+    const invoicesByCompany = filteredInvoices.reduce<Record<string, number>>((acc, o) => {
+      const name = o.company?.description ?? 'Sin asignar';
+      acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const filesByCompany = accountingEvents.reduce<Record<string, number>>((acc, e) => {
+      const name = (e.companyId != null && companyNameById.get(String(e.companyId))) || 'Sin asignar';
+      acc[name] = (acc[name] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    const companyBreakdown = Array.from(new Set([...Object.keys(invoicesByCompany), ...Object.keys(filesByCompany)]))
+      .map(company => ({
+        company,
+        invoices: invoicesByCompany[company] ?? 0,
+        files: filesByCompany[company] ?? 0,
+      }))
+      .sort((a, b) => b.invoices - a.invoices)
+      .slice(0, 10);
+
     return {
       totalLogins: successLogins.length,
       accountingFiles: accountingEvents.length,
@@ -116,8 +142,9 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
       topUsersByFiles,
       invoiceChartData,
       opsVolumeChartData,
+      companyBreakdown,
     };
-  }, [eventsData, invoicesData, timeRange]);
+  }, [eventsData, invoicesData, timeRange, companies]);
 
   if (isLoading) {
     return (
@@ -231,7 +258,30 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
         ))}
       </div>
 
-      {/* Row 1 — historial de accesos */}
+      {/* Row 1 — facturas vs. archivos contables, por período y por empresa */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="shadow-none">
+          <CardHeader className="px-5 pt-5 pb-3">
+            <CardTitle className="text-sm font-semibold">Facturas recibidas vs. archivos contables creados</CardTitle>
+            <CardDescription className="text-xs">Comparativa de volumen por período</CardDescription>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <InvoicesVsAccountingFilesBarChart data={analytics.opsVolumeChartData} />
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-none">
+          <CardHeader className="px-5 pt-5 pb-3">
+            <CardTitle className="text-sm font-semibold">Facturas y archivos por empresa</CardTitle>
+            <CardDescription className="text-xs">Comparativa de volumen por empresa en el período</CardDescription>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <CompanyVolumeBarChart data={analytics.companyBreakdown} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2 — historial de accesos */}
       <Card className="shadow-none">
         <CardHeader className="px-5 pt-5 pb-3">
           <CardTitle className="text-sm font-semibold">Historial de accesos</CardTitle>
@@ -242,7 +292,7 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
         </CardContent>
       </Card>
 
-      {/* Row 2 — usuarios más activos (solo administradores) */}
+      {/* Row 3 — usuarios más activos (solo administradores) */}
       {isAdmin && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="shadow-none">
@@ -266,17 +316,6 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
           </Card>
         </div>
       )}
-
-      {/* Row 3 — facturas vs. archivos contables */}
-      <Card className="shadow-none">
-        <CardHeader className="px-5 pt-5 pb-3">
-          <CardTitle className="text-sm font-semibold">Facturas recibidas vs. archivos contables creados</CardTitle>
-          <CardDescription className="text-xs">Comparativa de volumen por período</CardDescription>
-        </CardHeader>
-        <CardContent className="px-5 pb-5">
-          <InvoicesVsAccountingFilesBarChart data={analytics.opsVolumeChartData} />
-        </CardContent>
-      </Card>
     </div>
   );
 }
