@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Button } from "@/components/ui/button";
 import { useVerifyOtpMutation } from "@/store/api/authApi";
@@ -31,8 +31,9 @@ interface OtpVerificationProps {
 export function OtpVerification({ email, onSuccess, onError }: OtpVerificationProps) {
   const [otp, setOtp] = useState("");
   const [verifyOtp, { isLoading }] = useVerifyOtpMutation();
+  const lastSubmittedOtpRef = useRef<string | null>(null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (otp.length !== 6) {
       toast.error("Please enter a 6-digit code");
       return;
@@ -51,13 +52,29 @@ export function OtpVerification({ email, onSuccess, onError }: OtpVerificationPr
       const error = err as { status?: number; data?: { message?: string } };
       const errorMessage = error?.data?.message || "Invalid OTP code";
 
+      lastSubmittedOtpRef.current = null;
+
       if (onError) {
         onError(errorMessage);
       } else {
         toast.error(errorMessage);
       }
     }
-  };
+  }, [otp, email, verifyOtp, onSuccess, onError]);
+
+  useEffect(() => {
+    if (otp.length !== 6) {
+      lastSubmittedOtpRef.current = null;
+      return;
+    }
+
+    if (isLoading || lastSubmittedOtpRef.current === otp) {
+      return;
+    }
+
+    lastSubmittedOtpRef.current = otp;
+    handleSubmit();
+  }, [otp, isLoading, handleSubmit]);
 
   return (
     <div className="flex flex-col items-center gap-4">
