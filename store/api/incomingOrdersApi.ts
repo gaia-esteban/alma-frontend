@@ -43,7 +43,7 @@ export interface IncomingOrdersStatsQueryParams {
   companyId: string;
   startDate: string;
   endDate: string;
-  granularity?: 'hour' | 'day' | 'week';
+  granularity?: 'hour' | 'day' | 'week' | 'month';
 }
 
 export interface InvoiceStatsByCompany {

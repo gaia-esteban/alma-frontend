@@ -9,7 +9,7 @@ export type TimelineOption =
   | 'last_90_days'
   | 'current_quarter';
 
-export type Granularity = 'hour' | 'day' | 'week';
+export type Granularity = 'hour' | 'day' | 'week' | 'month';
 
 export interface TimeRange {
   startDate: Date;
@@ -144,6 +144,9 @@ export function getBucketKey(date: Date, granularity: Granularity): string {
   if (granularity === 'day') {
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
+  if (granularity === 'month') {
+    return `${date.getFullYear()}-${date.getMonth()}`;
+  }
   // week: normalize to Monday of that week
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -156,6 +159,9 @@ export function getBucketKey(date: Date, granularity: Granularity): string {
 function formatBucketLabel(date: Date, granularity: Granularity): string {
   if (granularity === 'hour') {
     return `${date.getHours().toString().padStart(2, '0')}:00`;
+  }
+  if (granularity === 'month') {
+    return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
   }
   return date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
 }
@@ -181,8 +187,7 @@ export function generateBuckets(
       buckets.push({ key: getBucketKey(current, 'day'), label: formatBucketLabel(current, 'day') });
       current.setDate(current.getDate() + 1);
     }
-  } else {
-    // week
+  } else if (granularity === 'week') {
     const current = new Date(startDate);
     current.setHours(0, 0, 0, 0);
     const day = current.getDay();
@@ -192,9 +197,47 @@ export function generateBuckets(
       buckets.push({ key: getBucketKey(current, 'week'), label: formatBucketLabel(current, 'week') });
       current.setDate(current.getDate() + 7);
     }
+  } else {
+    // month
+    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    while (current <= endDate) {
+      buckets.push({ key: getBucketKey(current, 'month'), label: formatBucketLabel(current, 'month') });
+      current.setMonth(current.getMonth() + 1);
+    }
   }
 
   return buckets;
+}
+
+/**
+ * Which bucket size to use for the "% facturas procesadas" trend: weekly
+ * for periods of a month or shorter, monthly once the selection spans a
+ * quarter (otherwise a quarter would render as a single bar).
+ */
+export function getTrendGranularity(option: TimelineOption): 'week' | 'month' {
+  return option === 'current_quarter' || option === 'last_90_days' ? 'month' : 'week';
+}
+
+export function bucketizeProcessedPct(
+  aggregates: { bucket: string; received: number; processed: number }[],
+  startDate: Date,
+  endDate: Date,
+  granularity: Granularity,
+): { label: string; pct: number; received: number; processed: number }[] {
+  const buckets = generateBuckets(startDate, endDate, granularity);
+  const byKey = new Map(aggregates.map(a => [getBucketKey(new Date(a.bucket), granularity), a]));
+
+  return buckets.map(b => {
+    const a = byKey.get(b.key);
+    const received = a?.received ?? 0;
+    const processed = a?.processed ?? 0;
+    return {
+      label: b.label,
+      pct: received > 0 ? (processed / received) * 100 : 0,
+      received,
+      processed,
+    };
+  });
 }
 
 export function bucketizeCounts(

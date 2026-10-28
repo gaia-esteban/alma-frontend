@@ -12,7 +12,15 @@ import { TopUsersRankList } from '@/components/charts/TopUsersRankList';
 import { TopUsersByFilesRankList } from '@/components/charts/TopUsersByFilesRankList';
 import { InvoicesVsAccountingFilesBarChart } from '@/components/charts/InvoicesVsAccountingFilesBarChart';
 import { CompanyVolumeBarChart } from '@/components/charts/CompanyVolumeBarChart';
-import { getTimeRange, bucketizeCounts, bucketizeAggregates, TimelineOption } from '@/lib/dashboard-utils';
+import { ProcessedInvoicesPctTrendChart } from '@/components/charts/ProcessedInvoicesPctTrendChart';
+import {
+  getTimeRange,
+  getTrendGranularity,
+  bucketizeCounts,
+  bucketizeAggregates,
+  bucketizeProcessedPct,
+  TimelineOption,
+} from '@/lib/dashboard-utils';
 import { colors } from '@/lib/colors';
 import { LogIn, FolderOpen, FileInput, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -34,6 +42,7 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
   const [timeline, setTimeline] = useState<TimelineOption>('current_month');
 
   const timeRange = useMemo(() => getTimeRange(timeline), [timeline]);
+  const trendGranularity = useMemo(() => getTrendGranularity(timeline), [timeline]);
 
   const { data: eventsData, isLoading: eventsLoading, error: eventsError } = useGetEventLogQuery(
     { companyId: companyId!, startDate: timeRange.startISO, endDate: timeRange.endISO, limit: 1000 },
@@ -45,7 +54,12 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
     { skip: !isHydrated || !companyId },
   );
 
-  const isLoading = !isHydrated || eventsLoading || statsLoading;
+  const { data: trendStatsData, isLoading: trendStatsLoading } = useGetIncomingOrdersStatsQuery(
+    { companyId: companyId!, startDate: timeRange.startISO, endDate: timeRange.endISO, granularity: trendGranularity },
+    { skip: !isHydrated || !companyId },
+  );
+
+  const isLoading = !isHydrated || eventsLoading || statsLoading || trendStatsLoading;
 
   const analytics = useMemo(() => {
     const events = eventsData?.data ?? [];
@@ -95,6 +109,13 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
       .sort((a, b) => b.invoices - a.invoices)
       .slice(0, 10);
 
+    const pctProcessedTrend = bucketizeProcessedPct(
+      trendStatsData?.data.byBucket ?? [],
+      timeRange.startDate,
+      timeRange.endDate,
+      trendGranularity,
+    );
+
     return {
       totalLogins: successLogins.length,
       accountingFiles: invoicesProcessed,
@@ -107,8 +128,9 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
       topUsersByFiles,
       opsVolumeChartData,
       companyBreakdown,
+      pctProcessedTrend,
     };
-  }, [eventsData, statsData, timeRange]);
+  }, [eventsData, statsData, trendStatsData, timeRange, trendGranularity]);
 
   if (isLoading) {
     return (
@@ -241,6 +263,21 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
         </CardHeader>
         <CardContent className="px-5 pb-5">
           <CompanyVolumeBarChart data={analytics.companyBreakdown} />
+        </CardContent>
+      </Card>
+
+      {/* Row 2.5 — % facturas procesadas, evolución por semana/mes */}
+      <Card className="shadow-none">
+        <CardHeader className="px-5 pt-5 pb-3">
+          <CardTitle className="text-sm font-semibold">Evolución de facturas procesadas</CardTitle>
+          <CardDescription className="text-xs">
+            {trendGranularity === 'month'
+              ? 'Porcentaje de facturas procesadas, agrupado por mes'
+              : 'Porcentaje de facturas procesadas, agrupado por semana'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <ProcessedInvoicesPctTrendChart data={analytics.pctProcessedTrend} />
         </CardContent>
       </Card>
 
