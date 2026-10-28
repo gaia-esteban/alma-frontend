@@ -137,7 +137,7 @@ export function getTimeRange(option: TimelineOption): TimeRange {
   }
 }
 
-function getBucketKey(date: Date, granularity: Granularity): string {
+export function getBucketKey(date: Date, granularity: Granularity): string {
   if (granularity === 'hour') {
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
   }
@@ -214,6 +214,22 @@ export function bucketizeCounts(
   });
 
   return buckets.map(b => ({ label: b.label, count: counts.get(b.key) ?? 0 }));
+}
+
+export function bucketizeAggregates(
+  aggregates: { bucket: string; received: number; processed: number }[],
+  timeRange: TimeRange,
+): { label: string; invoices: number; files: number }[] {
+  const { startDate, endDate, granularity } = timeRange;
+  const buckets = generateBuckets(startDate, endDate, granularity);
+  const byKey = new Map(
+    aggregates.map(a => [getBucketKey(new Date(a.bucket), granularity), a]),
+  );
+
+  return buckets.map(b => {
+    const a = byKey.get(b.key);
+    return { label: b.label, invoices: a?.received ?? 0, files: a?.processed ?? 0 };
+  });
 }
 
 export function bucketizeRevenue(

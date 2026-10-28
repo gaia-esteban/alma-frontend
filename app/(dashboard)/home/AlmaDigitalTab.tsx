@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useGetEventLogQuery } from '@/store/api/eventLogApi';
-import { useGetIncomingOrdersQuery } from '@/store/api/incomingOrdersApi';
+import { useGetIncomingOrdersStatsQuery } from '@/store/api/incomingOrdersApi';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,7 +12,7 @@ import { TopUsersRankList } from '@/components/charts/TopUsersRankList';
 import { TopUsersByFilesRankList } from '@/components/charts/TopUsersByFilesRankList';
 import { InvoicesVsAccountingFilesBarChart } from '@/components/charts/InvoicesVsAccountingFilesBarChart';
 import { CompanyVolumeBarChart } from '@/components/charts/CompanyVolumeBarChart';
-import { getTimeRange, bucketizeCounts, TimelineOption } from '@/lib/dashboard-utils';
+import { getTimeRange, bucketizeCounts, bucketizeAggregates, TimelineOption } from '@/lib/dashboard-utils';
 import { colors } from '@/lib/colors';
 import { LogIn, FolderOpen, FileInput, AlertCircle, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
@@ -40,16 +40,16 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
     { skip: !isHydrated || !companyId },
   );
 
-  const { data: invoicesData, isLoading: invoicesLoading } = useGetIncomingOrdersQuery(
-    { companyId: companyId!, populate: false, limit: 1000 },
+  const { data: statsData, isLoading: statsLoading } = useGetIncomingOrdersStatsQuery(
+    { companyId: companyId!, startDate: timeRange.startISO, endDate: timeRange.endISO, granularity: timeRange.granularity },
     { skip: !isHydrated || !companyId },
   );
 
-  const isLoading = !isHydrated || eventsLoading || invoicesLoading;
+  const isLoading = !isHydrated || eventsLoading || statsLoading;
 
   const analytics = useMemo(() => {
     const events = eventsData?.data ?? [];
-    const invoices = invoicesData?.data ?? [];
+    const stats = statsData?.data;
 
     const loginEvents = events.filter(e => e.eventName === 'LOGGED_IN');
     const successLogins = loginEvents.filter(e => e.outcome === 'SUCCESS');
@@ -80,72 +80,35 @@ export function AlmaDigitalTab({ companyId }: AlmaDigitalTabProps) {
       .sort((a, b) => b.files - a.files)
       .slice(0, 8);
 
-    const filteredInvoices = invoices.filter(o => {
-      const d = new Date(o.createdAt);
-      return d >= timeRange.startDate && d <= timeRange.endDate;
-    });
-    const invoiceChartData = bucketizeCounts(
-      filteredInvoices.map(o => o.createdAt),
-      timeRange,
-    ).map(d => ({ label: d.label, invoices: d.count }));
-
-    // "Archivos contables creados" is derived from invoices marked Procesada,
-    // not from ACCOUNTING_FILE_CREATED events — those only started recording
-    // once event-logging was fixed in production, so historical processed
-    // invoices would otherwise show as zero despite being real.
-    const processedInvoices = filteredInvoices.filter(o => o.status === 'Procesada');
-    const accountingChartData = bucketizeCounts(
-      processedInvoices.map(o => o.createdAt),
-      timeRange,
-    ).map(d => ({ label: d.label, files: d.count }));
-
-    const opsVolumeChartData = invoiceChartData.map((d, i) => ({
-      label: d.label,
-      invoices: d.invoices,
-      files: accountingChartData[i]?.files ?? 0,
-    }));
-
-    const invoicesCreated = filteredInvoices.length;
-    const invoicesProcessed = processedInvoices.length;
+    // "Archivos contables creados" / "% procesadas" / the per-company and
+    // per-period breakdowns all come from a server-side GROUP BY aggregate
+    // (see invoiceService.getInvoiceStats), not a row-limited invoice fetch —
+    // a single high-volume company can no longer crowd out the others.
+    const invoicesCreated = stats?.totals.received ?? 0;
+    const invoicesProcessed = stats?.totals.processed ?? 0;
     const pctProcessed = invoicesCreated > 0 ? (invoicesProcessed / invoicesCreated) * 100 : 0;
 
-    const invoicesByCompany = filteredInvoices.reduce<Record<string, number>>((acc, o) => {
-      const name = o.company?.description ?? 'Sin asignar';
-      acc[name] = (acc[name] ?? 0) + 1;
-      return acc;
-    }, {});
+    const opsVolumeChartData = bucketizeAggregates(stats?.byBucket ?? [], timeRange);
 
-    const filesByCompany = processedInvoices.reduce<Record<string, number>>((acc, o) => {
-      const name = o.company?.description ?? 'Sin asignar';
-      acc[name] = (acc[name] ?? 0) + 1;
-      return acc;
-    }, {});
-
-    const companyBreakdown = Array.from(new Set([...Object.keys(invoicesByCompany), ...Object.keys(filesByCompany)]))
-      .map(company => ({
-        company,
-        invoices: invoicesByCompany[company] ?? 0,
-        files: filesByCompany[company] ?? 0,
-      }))
+    const companyBreakdown = (stats?.byCompany ?? [])
+      .map(c => ({ company: c.description, invoices: c.received, files: c.processed }))
       .sort((a, b) => b.invoices - a.invoices)
       .slice(0, 10);
 
     return {
       totalLogins: successLogins.length,
       accountingFiles: invoicesProcessed,
-      invoicesReceived: filteredInvoices.length,
+      invoicesReceived: invoicesCreated,
       invoicesCreated,
       invoicesProcessed,
       pctProcessed,
       loginChartData,
-      accountingChartData,
       topUsersByLogins,
       topUsersByFiles,
-      invoiceChartData,
       opsVolumeChartData,
       companyBreakdown,
     };
-  }, [eventsData, invoicesData, timeRange]);
+  }, [eventsData, statsData, timeRange]);
 
   if (isLoading) {
     return (
