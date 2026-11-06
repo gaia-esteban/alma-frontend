@@ -19,15 +19,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { colors } from '@/lib/colors';
 import { Supplier } from '@/types/supplier';
+import { AccountingSystem } from '@/types/company';
 import {
   SupplierCreateBody,
   SupplierUpdateBody,
   useCreateSupplierMutation,
   useUpdateSupplierMutation,
+  useSyncSupplierWithSiigoMutation,
 } from '@/store/api/suppliersApi';
 
 interface FormState {
@@ -78,7 +80,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplier: Supplier | null;
-  companies: { id: number; description: string }[];
+  companies: { id: number; description: string; accounting_system?: AccountingSystem }[];
 }
 
 interface FieldLabelProps {
@@ -112,7 +114,28 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
 
   const [createSupplier, { isLoading: isCreating }] = useCreateSupplierMutation();
   const [updateSupplier, { isLoading: isUpdating }] = useUpdateSupplierMutation();
-  const isLoading = isCreating || isUpdating;
+  const [syncSupplierWithSiigo, { isLoading: isSyncing }] = useSyncSupplierWithSiigoMutation();
+  const isSaving = isCreating || isUpdating;
+  const isLoading = isSaving || isSyncing;
+
+  const isSiigoCompany =
+    companies.find(c => c.id === form.companyId)?.accounting_system === 'siigo';
+
+  // Ensures the supplier exists in Siigo (creating it there if missing). On failure the
+  // backend also emails the user the reason, so a toast is enough here.
+  const syncWithSiigo = async (id: number, companyId: number) => {
+    try {
+      const res = await syncSupplierWithSiigo({ id, companyId }).unwrap();
+      toast.success(res.message);
+      return true;
+    } catch (err) {
+      const e = err as { data?: { message?: string } };
+      toast.error(e?.data?.message || 'No fue posible sincronizar el proveedor con Siigo', {
+        description: 'Te enviamos un correo con el detalle.',
+      });
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -161,8 +184,11 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
         await updateSupplier({ id: supplier!.id, companyId: supplier!.company_id, data: payload as SupplierUpdateBody }).unwrap();
         toast.success('Proveedor actualizado correctamente');
       } else {
-        await createSupplier(payload as SupplierCreateBody).unwrap();
+        const created = await createSupplier(payload as SupplierCreateBody).unwrap();
         toast.success('Proveedor creado correctamente');
+        if (isSiigoCompany) {
+          await syncWithSiigo(created.data.supplier.id, created.data.supplier.company_id);
+        }
       }
       onOpenChange(false);
     } catch (err) {
@@ -353,6 +379,40 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
 
           <Separator style={{ backgroundColor: colors.border }} />
 
+          {/* Siigo */}
+          {isEditing && isSiigoCompany && (
+            <>
+              <div>
+                <SectionTitle>Siigo</SectionTitle>
+                <div
+                  className="flex items-center justify-between gap-3 p-3 rounded-lg"
+                  style={{ backgroundColor: colors.muted }}
+                >
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: colors.foreground }}>Sincronizar con Siigo</p>
+                    <p className="text-xs mt-0.5" style={{ color: colors.mutedForeground }}>
+                      Verifica que el proveedor exista en Siigo y lo crea si no existe
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="shrink-0 min-h-11"
+                    onClick={() => syncWithSiigo(supplier!.id, supplier!.company_id)}
+                    disabled={isLoading}
+                  >
+                    {isSyncing ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sincronizando...</>
+                    ) : (
+                      <><RefreshCw className="mr-2 h-4 w-4" />Sincronizar</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <Separator style={{ backgroundColor: colors.border }} />
+            </>
+          )}
+
           {/* Estado */}
           <div>
             <SectionTitle>Estado</SectionTitle>
@@ -392,8 +452,10 @@ export function SupplierSlideOver({ open, onOpenChange, supplier, companies }: P
             onClick={handleSubmit}
             disabled={isLoading}
           >
-            {isLoading ? (
+            {isSaving ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isEditing ? 'Guardando...' : 'Creando...'}</>
+            ) : isSyncing && !isEditing ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sincronizando con Siigo...</>
             ) : (
               isEditing ? 'Guardar cambios' : 'Crear proveedor'
             )}

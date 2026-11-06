@@ -40,6 +40,19 @@ export interface SupplierCreateBody {
   is_active?: boolean;
 }
 
+export interface SiigoSyncResult {
+  status: 'exists' | 'created' | 'failed';
+  siigoId?: string | null;
+  message?: string;
+  missing?: string[];
+}
+
+export interface SupplierSiigoSyncResponse {
+  success: boolean;
+  message: string;
+  data?: { siigo: SiigoSyncResult };
+}
+
 export type SupplierUpdateBody = Partial<Omit<SupplierCreateBody, 'companyId'>>;
 
 export const suppliersApi = api.injectEndpoints({
@@ -82,6 +95,14 @@ export const suppliersApi = api.injectEndpoints({
         TagTypes.Supplier,
       ],
     }),
+
+    syncSupplierWithSiigo: builder.mutation<SupplierSiigoSyncResponse, { id: number; companyId: number }>({
+      query: ({ id, companyId }) => ({
+        url: `/suppliers/${id}/siigo-sync`,
+        method: 'POST',
+        body: { companyId },
+      }),
+    }),
   }),
 });
 
@@ -90,4 +111,5 @@ export const {
   useGetSupplierByIdQuery,
   useCreateSupplierMutation,
   useUpdateSupplierMutation,
+  useSyncSupplierWithSiigoMutation,
 } = suppliersApi;
